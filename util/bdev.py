@@ -1,5 +1,5 @@
 import os
-import sys
+import java
 from util import sizeof_fmt, hexdump
 from progressbar import ProgressBar
 from crypto.aes import AESdecryptCBC, AESencryptCBC
@@ -7,7 +7,7 @@ from crypto.aes import AESdecryptCBC, AESencryptCBC
 class FileBlockDevice(object):
     def __init__(self, filename, offset=0, write=False):
         flag = os.O_RDONLY if not write else os.O_RDWR
-        if sys.platform == 'win32':
+        if "Windows" in java.lang.System.getProperty('os.name').encode('ascii','ignore'):
             flag = flag | os.O_BINARY
         self.filename = filename
         self.fd = os.open(filename, flag)
@@ -74,7 +74,7 @@ class FTLBlockDevice(object):
         hs = sizeof_fmt((self.last_lba - self.lbaoffset) * self.pageSize)
         print "Dumping partition to %s (%s)" % (outputfilename, hs)
         flags = os.O_CREAT | os.O_RDWR
-        if sys.platform == "win32":
+        if "Windows" in java.lang.System.getProperty('os.name').encode('ascii','ignore'):
             flags |= os.O_BINARY
         fd=os.open(outputfilename, flags)
         
@@ -92,7 +92,7 @@ class FTLBlockDevice(object):
 class IMG3BlockDevice(object):
     def __init__(self, filename, key, iv, write=False):
         flag = os.O_RDONLY if not write else os.O_RDWR
-        if sys.platform == 'win32':
+        if "Windows" in java.lang.System.getProperty('os.name').encode('ascii','ignore'):
             flag = flag | os.O_BINARY
         self.filename = filename
         self.fd = os.open(filename, flag)
