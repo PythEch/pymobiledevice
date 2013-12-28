@@ -1,6 +1,5 @@
 from plist_service import PlistService
 from pprint import pprint
-from util import write_file, readHomeFile, writeHomeFile
 import os
 import plistlib
 import uuid
@@ -8,8 +7,8 @@ import platform
 import java
 
 if "Windows" in java.lang.System.getProperty('os.name').encode('ascii','ignore'):
-    HOMEFOLDER = os.path.join(os.path.join(os.environ["ALLUSERSPROFILE"], "Apple"), "Lockdown")
-else:
+    HOMEFOLDER = os.path.join(os.environ["ALLUSERSPROFILE"], "Apple", "Lockdown")
+else: #Linux won't work?
     HOMEFOLDER = "/var/db/lockdown/"
 
 class LockdownClient(object):
@@ -122,8 +121,3 @@ class LockdownClient(object):
         #print StartService
         zz = PlistService(StartService["Port"])
         return zz
-
-if __name__ == "__main__":
-    l = LockdownClient()
-    n = writeHomeFile(HOMEFOLDER, "%s_infos.plist" % l.udid, plistlib.writePlistToString(l.allValues))
-    print "Wrote infos to %s" % n
