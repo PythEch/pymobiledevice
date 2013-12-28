@@ -18,7 +18,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-import socket, struct, select, sys
+import socket, struct, select, sys, java
 
 try:
 	import plistlib
@@ -148,7 +148,7 @@ class PlistProtocol(BinaryProtocol):
 class MuxConnection(object):
 	def __init__(self, socketpath, protoclass):
 		self.socketpath = socketpath
-		if sys.platform in ['win32', 'cygwin']:
+		if "Windows" in java.lang.System.getProperty('os.name').encode('ascii','ignore'):
 			family = socket.AF_INET
 			address = ('127.0.0.1', 27015)
 		else:
@@ -210,12 +210,7 @@ class MuxConnection(object):
 		self.socket.sock.close()
 
 class USBMux(object):
-	def __init__(self, socketpath=None):
-		if socketpath is None:
-			if sys.platform == 'darwin':
-				socketpath = "/var/run/usbmuxd"
-			else:
-				socketpath = "/var/run/usbmuxd"
+	def __init__(self, socketpath="/var/run/usbmuxd"):
 		self.socketpath = socketpath
 		self.listener = MuxConnection(socketpath, BinaryProtocol)
 		try:
