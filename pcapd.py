@@ -1,6 +1,7 @@
 import struct
 import time
 import sys
+import java
 from lockdown import LockdownClient
 
 """
@@ -59,10 +60,10 @@ class Win32Pipe(object):
         return errCode == 0
 
 if __name__ == "__main__":
-    if sys.platform == "win32":
+    if "Windows" in java.lang.System.getProperty('os.name').encode('ascii','ignore'):
         import win32pipe, win32file
         output = Win32Pipe()
-    elif sys.platform == "darwin":
+    else:
         print "Why not use rvictl ?"
 	output = PcapOut("test2.pcap")
 
