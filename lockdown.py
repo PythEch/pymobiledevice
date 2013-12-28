@@ -7,6 +7,7 @@ import sys
 import uuid
 #import socket
 import platform
+import java
 
 #we store pairing records and ssl keys in ~/.pymobiledevice
 platform = java.lang.System.getProperty('os.name').encode('ascii','ignore').lower()
