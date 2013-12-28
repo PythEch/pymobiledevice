@@ -9,9 +9,10 @@ import uuid
 import platform
 
 #we store pairing records and ssl keys in ~/.pymobiledevice
-if sys.platform == "win32":
+platform = java.lang.System.getProperty('os.name').encode('ascii','ignore').lower()
+if "windows" in platform:
     HOMEFOLDER = os.environ["ALLUSERSPROFILE"] + "/Apple/Lockdown/"
-elif sys.platform == "darwin":
+elif "mac" in platform:
     HOMEFOLDER = "/var/db/lockdown/"
 
 class LockdownClient(object):
