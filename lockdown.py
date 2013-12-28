@@ -3,17 +3,13 @@ from pprint import pprint
 from util import write_file, readHomeFile, writeHomeFile
 import os
 import plistlib
-import sys
 import uuid
-#import socket
 import platform
 import java
 
-#we store pairing records and ssl keys in ~/.pymobiledevice
-platform = java.lang.System.getProperty('os.name').encode('ascii','ignore').lower()
-if "windows" in platform:
-    HOMEFOLDER = os.environ["ALLUSERSPROFILE"] + "/Apple/Lockdown/"
-elif "mac" in platform:
+if "Windows" in java.lang.System.getProperty('os.name').encode('ascii','ignore'):
+    HOMEFOLDER = os.path.join(os.path.join(os.environ["ALLUSERSPROFILE"], "Apple"), "Lockdown")
+else:
     HOMEFOLDER = "/var/db/lockdown/"
 
 class LockdownClient(object):
@@ -44,10 +40,7 @@ class LockdownClient(object):
         #    else:
         #        print "Could not get UDID or ECID, failing"
         #        raise
-        if not self.validate_pairing():
-            if not self.pair():
-                return
-            self.validate_pairing()
+        self.validate_pairing()
 
     def generate_hostID(self):
         #hostname = socket.gethostname()
@@ -83,22 +76,12 @@ class LockdownClient(object):
         pair_record = None
         certPem = None
         privateKeyPem = None
-
-        record = readHomeFile(HOMEFOLDER, "%s.plist" % self.identifier)
-        if record:
-            pair_record = plistlib.readPlistFromString(record)
-            certPem = pair_record["HostCertificate"].data
-            privateKeyPem = pair_record["HostPrivateKey"].data
-            print "Found pairing record for device %s" % self.udid
-        else:
-            print "No pairing record found for device %s" % self.identifier
-            return
-            
+        pair_record = plistlib.readPlist(os.path.join(HOMEFOLDER, "%s.plist" % self.identifier))
         ValidatePair = {"Request": "ValidatePair", "PairRecord": pair_record}
         self.c.sendPlist(ValidatePair)
         ValidatePair = self.c.recvPlist()
         if not ValidatePair or ValidatePair.has_key("Error"):
-            pair_record =None
+            pair_record = None
             print "ValidatePair fail", ValidatePair
             return False
         self.paired = True
@@ -108,14 +91,6 @@ class LockdownClient(object):
         startsession = self.c.recvPlist() 
         #print "Starting session",startsession
         self.SessionID = startsession.get("SessionID")
-        if startsession.get("EnableSessionSSL"):
-            sslfile = self.identifier + "_ssl.txt"
-            sslfile = writeHomeFile(HOMEFOLDER, sslfile, certPem + "\n" + privateKeyPem)
-            self.c.ssl_start(sslfile, sslfile)
-            #print "SSL started"
-            self.udid = self.getValue("", "UniqueDeviceID")
-            self.allValues = self.getValue("", "")
-            #print "UDID", self.udid
         return True
     
     def getValue(self, domain=None, key=None):
