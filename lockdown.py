@@ -39,7 +39,10 @@ class LockdownClient(object):
         #    else:
         #        print "Could not get UDID or ECID, failing"
         #        raise
-        self.validate_pairing()
+        if not self.validate_pairing():
+            if not self.pair():
+                return
+            self.validate_pairing()
 
     def generate_hostID(self):
         #hostname = socket.gethostname()
@@ -84,13 +87,49 @@ class LockdownClient(object):
             print "ValidatePair fail", ValidatePair
             return False
         self.paired = True
+        certPem = pair_record["HostCertificate"].data
+        privateKeyPem = pair_record["HostPrivateKey"].data
         #print "Validate Pairing OK", ValidatePair
         d = {"Request": "StartSession", "HostID": pair_record.get("HostID", self.hostID)}
         self.c.sendPlist(d)
-        startsession = self.c.recvPlist() 
+        startsession = self.c.recvPlist()
         #print "Starting session",startsession
         self.SessionID = startsession.get("SessionID")
+        if startsession.get("EnableSessionSSL"):
+            sslfile = self.identifier + "_ssl.txt"
+            sslfile = writeHomeFile(HOMEFOLDER, sslfile, certPem + "\n" + privateKeyPem)
+            self.c.ssl_start(sslfile, sslfile)
+            #print "SSL started"
+            self.udid = self.getValue("", "UniqueDeviceID")
+            self.allValues = self.getValue("", "")
+            #print "UDID", self.udid
         return True
+
+    def pair(self):
+        self.DevicePublicKey =  self.getValue("", "DevicePublicKey")
+        pair_record = plistlib.readPlist(os.path.join(HOMEFOLDER, "%s.plist" % self.identifier))
+        DeviceCertificate = pair_record["DeviceCertificate"].data
+        certPem = pair_record["HostCertificate"].data
+        privateKeyPem = pair_record["HostPrivateKey"].data
+        #DevicePublicKey = pair_record["DevicePublicKey"].data
+        pair_record = {"DevicePublicKey": plistlib.Data(self.DevicePublicKey),
+                       "DeviceCertificate": plistlib.Data(DeviceCertificate),
+                       "HostCertificate": plistlib.Data(certPem),
+                       "HostID": self.hostID,
+                       "RootCertificate": plistlib.Data(certPem),
+                       "SystemBUID": "30142955-444094379208051516"
+        }
+        Pair = {"Request": "Pair", "PairRecord": pair_record}
+        self.c.sendPlist(Pair)
+        Pair = self.c.recvPlist()
+        print Pair
+        if Pair and Pair.get("Result") == "Success" or Pair.has_key("EscrowBag"):
+            pair_record["HostPrivateKey"] = plistlib.Data(privateKeyPem)
+            if Pair.has_key("EscrowBag"):
+                pair_record["EscrowBag"] = Pair["EscrowBag"]
+            return True
+        print "Pairing error", Pair
+        return False
     
     def getValue(self, domain=None, key=None):
         req = {"Request":"GetValue", "Label": self.label}
