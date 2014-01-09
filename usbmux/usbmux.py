@@ -34,7 +34,7 @@ class MuxVersionError(MuxError):
 
 class SafeStreamSocket:
 	def __init__(self, address, family):
-		self.sock = socket.socket(family, socket.SOCK_DGRAM)
+		self.sock = socket.socket(family, socket.SOCK_STREAM)
 		self.sock.connect(address)
 	def send(self, msg):
 		totalsent = 0
