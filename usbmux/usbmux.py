@@ -18,7 +18,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-import socket, struct, select, sys, java
+import socket, struct, sys, java
+from select import cpython_compatible_select as select
 
 try:
 	import plistlib
@@ -74,7 +75,7 @@ class BinaryProtocol(object):
 
 	def _pack(self, req, payload):
 		if req == self.TYPE_CONNECT:
-			return struct.pack("IH", payload['DeviceID'], payload['PortNumber']) + "\x00\x00"
+			return struct.pack("<IH", payload['DeviceID'], payload['PortNumber']) + "\x00\x00"
 		elif req == self.TYPE_LISTEN:
 			return ""
 		else:
@@ -82,13 +83,13 @@ class BinaryProtocol(object):
 	
 	def _unpack(self, resp, payload):
 		if resp == self.TYPE_RESULT:
-			return {'Number':struct.unpack("I", payload)[0]}
+			return {'Number':struct.unpack("<I", payload)[0]}
 		elif resp == self.TYPE_DEVICE_ADD:
-			devid, usbpid, serial, pad, location = struct.unpack("IH256sHI", payload)
+			devid, usbpid, serial, pad, location = struct.unpack("<IH256sHI", payload)
 			serial = serial.split("\0")[0]
 			return {'DeviceID': devid, 'Properties': {'LocationID': location, 'SerialNumber': serial, 'ProductID': usbpid}}
 		elif resp == self.TYPE_DEVICE_REMOVE:
-			devid = struct.unpack("I", payload)[0]
+			devid = struct.unpack("<I", payload)[0]
 			return {'DeviceID': devid}
 		else:
 			raise MuxError("Invalid incoming request type %d"%req)
@@ -98,15 +99,15 @@ class BinaryProtocol(object):
 		if self.connected:
 			raise MuxError("Mux is connected, cannot issue control packets")
 		length = 16 + len(payload)
-		data = struct.pack("IIII", length, self.VERSION, req, tag) + payload
+		data = struct.pack("<IIII", length, self.VERSION, req, tag) + payload
 		self.socket.send(data)
 	def getpacket(self):
 		if self.connected:
 			raise MuxError("Mux is connected, cannot issue control packets")
 		dlen = self.socket.recv(4)
-		dlen = struct.unpack("I", dlen)[0]
+		dlen = struct.unpack("<I", dlen)[0]
 		body = self.socket.recv(dlen - 4)
-		version, resp, tag = struct.unpack("III",body[:0xc])
+		version, resp, tag = struct.unpack("<III",body[:0xc])
 		if version != self.VERSION:
 			raise MuxVersionError("Version mismatch: expected %d, got %d"%(self.VERSION,version))
 		payload = self._unpack(resp, body[0xc:])
@@ -194,7 +195,7 @@ class MuxConnection(object):
 	def process(self, timeout=None):
 		if self.proto.connected:
 			raise MuxError("Socket is connected, cannot process listener events")
-		rlo, wlo, xlo = select.select([self.socket.sock], [], [self.socket.sock], timeout)
+		rlo, wlo, xlo = select([self.socket.sock], [], [self.socket.sock], timeout)
 		if xlo:
 			self.socket.sock.close()
 			raise MuxError("Exception in listener socket")
