@@ -86,4 +86,4 @@ class PlistService(object):
         self.send(l + payload)
 
     def ssl_start(self, keyfile, certfile):
-        self.s = ssl.wrap_socket(self.s, keyfile, certfile, ssl_version=ssl.PROTOCOL_TLSv1)
+        self.s = ssl.wrap_socket(self.s, keyfile, certfile)
