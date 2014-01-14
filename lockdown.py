@@ -44,7 +44,9 @@ class LockdownClient(object):
 
     def generate_hostID(self):
         #hostname = socket.gethostname()
-        hostname = platform.node()
+        #hostname = platform.node()
+        hostname = java.net.InetAddress.getLocalHost().getHostName()
+        print "hostname: " + hostname.encode("base64")
         hostid = uuid.uuid3(uuid.NAMESPACE_DNS, hostname)
         return str(hostid).upper()
 

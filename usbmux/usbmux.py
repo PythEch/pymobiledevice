@@ -18,8 +18,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-import socket, struct, sys, java
-from select import cpython_compatible_select as select
+import pymobiledevice
+import socket, struct, sys, java, select
+    
 
 try:
 	import plistlib
@@ -35,15 +36,11 @@ class MuxVersionError(MuxError):
 
 class SafeStreamSocket:
 	def __init__(self, address, family):
-		self.sock = socket.socket(family, socket.SOCK_STREAM)
+		self.sock = socket.socket(family)
 		self.sock.connect(address)
 	def send(self, msg):
-		totalsent = 0
-		while totalsent < len(msg):
-			sent = self.sock.send(msg[totalsent:])
-			if sent == 0:
-				raise MuxError("socket connection broken")
-			totalsent = totalsent + sent
+                self.sock.send(msg)
+                        
 	def recv(self, size):
 		msg = ''
 		while len(msg) < size:
@@ -150,7 +147,7 @@ class MuxConnection(object):
 	def __init__(self, socketpath, protoclass):
 		self.socketpath = socketpath
 		if "Windows" in java.lang.System.getProperty('os.name').encode('ascii','ignore'):
-			family = socket.AF_INET
+			family = None
 			address = ('127.0.0.1', 27015)
 		else:
 			family = socket.AF_UNIX
@@ -195,7 +192,7 @@ class MuxConnection(object):
 	def process(self, timeout=None):
 		if self.proto.connected:
 			raise MuxError("Socket is connected, cannot process listener events")
-		rlo, wlo, xlo = select([self.socket.sock], [], [self.socket.sock], timeout)
+		rlo, wlo, xlo = select.select([self.socket.sock], [], [self.socket.sock], timeout)
 		if xlo:
 			self.socket.sock.close()
 			raise MuxError("Exception in listener socket")

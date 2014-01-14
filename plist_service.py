@@ -18,6 +18,7 @@ class PlistService(object):
         #if not mux.devices:
         #print "Waiting for iOS device %s" % str(udid)
         while not dev and mux.devices :
+            mux = usbmux.USBMux()
             mux.process(1.0)
             if udid:
                 for d in mux.devices:
