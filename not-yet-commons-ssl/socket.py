@@ -1837,43 +1837,6 @@ def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
 # Define the SSL support
 from org.apache.commons.ssl import *
 
-from javax.net.ssl import TrustManager, X509TrustManager
-from jarray import array
-from javax.net.ssl import SSLContext
-class TrustAllX509TrustManager(X509TrustManager):
-    '''Define a custom TrustManager which will blindly accept all certificates'''
-
-    def checkClientTrusted(self, chain, auth):
-	pass
-
-    def checkServerTrusted(self, chain, auth):
-	pass
-
-    def getAcceptedIssuers(self):
-	return None
-# Create a static reference to an SSLContext which will use
-# our custom TrustManager
-trust_managers = array([TrustAllX509TrustManager()], TrustManager)
-TRUST_ALL_CONTEXT = SSLContext.getInstance("TLSv1")
-TRUST_ALL_CONTEXT.init(None, trust_managers, None)
-# Keep a static reference to the JVM's default SSLContext for restoring
-# at a later time
-DEFAULT_CONTEXT = SSLContext.getDefault()
- 
-def trust_all_certificates(f):
-    '''Decorator function that will make it so the context of the decorated method
-    will run with our TrustManager that accepts all certificates'''
-    def wrapped(*args, **kwargs):
-        # Only do this if running under Jython
-	from javax.net.ssl import SSLContext
-	SSLContext.setDefault(TRUST_ALL_CONTEXT)
-	try:
-            res = f(*args, **kwargs)
-	    return res
-	finally:
-            SSLContext.setDefault(DEFAULT_CONTEXT)
-    return wrapped
-
 class ssl:
     """Client Example:
 
@@ -1902,21 +1865,19 @@ SSLSocket s = (SSLSocket) client.createSocket( "www.cucbc.com", 443 );"""
         #self.java_ssl_socket = self._make_ssl_socket(jython_socket)
         self._in_buf = java.io.BufferedInputStream(self.java_ssl_socket.getInputStream())
         self._out_buf = java.io.BufferedOutputStream(self.java_ssl_socket.getOutputStream())
-    @trust_all_certificates
+
     def openssl_socket(self, jython_socket, keyfile, certfile):
         java_net_socket = jython_socket._get_jsocket()
         assert isinstance(java_net_socket, java.net.Socket)
         host = java_net_socket.getInetAddress().getHostAddress()
         port = java_net_socket.getPort()
         client = SSLClient()
-        client.addTrustMaterial(TrustMaterial.TRUST_ALL)
-        client.addTrustMaterial(TrustMaterial(certfile))
-        client.addTrustMaterial(KeyMaterial(keyfile, "changeit"))
         client.setCheckHostname(False)
         client.setCheckExpiry(False)
         client.setCheckCRL(False)
         client.setTrustMaterial(TrustMaterial(certfile))
         client.setKeyMaterial(KeyMaterial(keyfile, "changeit"))
+        client.setTrustMaterial(TrustMaterial.TRUST_ALL)
         s = client.createSocket(java_net_socket, host, port, 0)
         s.startHandshake()
         return s
@@ -1938,7 +1899,7 @@ SSLSocket s = (SSLSocket) client.createSocket( "www.cucbc.com", 443 );"""
         raise AttributeError(attr_name)
 
     @raises_java_exception
-    def read(self, n=4096):
+    def recv(self, n=4096):
         data = jarray.zeros(n, 'b')
         m = self._in_buf.read(data, 0, n)
         if m <= 0:
@@ -1948,7 +1909,7 @@ SSLSocket s = (SSLSocket) client.createSocket( "www.cucbc.com", 443 );"""
         return data.tostring()
 
     @raises_java_exception
-    def write(self, s):
+    def send(self, s):
         self._out_buf.write(s)
         self._out_buf.flush()
         return len(s)
