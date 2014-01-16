@@ -3,7 +3,7 @@ site.addsitedir(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentf
 
 
 if 'java' in sys.platform.lower():
-    wd = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'netty')
+    wd = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'not-yet-commons-ssl')
     for jar in os.listdir(wd):
         sys.path.append(os.path.join(wd, jar))
     
