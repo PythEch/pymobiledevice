@@ -1,10 +1,12 @@
 from usbmux import usbmux
 from util.bplist import BPlistReader
 import plistlib
-import ssl
 import struct
 from pprint import pprint
 from re import sub
+import socket
+import java
+from org.apache.commons.ssl import SSLClient, KeyMaterial, TrustMaterial
 
 class PlistService(object):
     def __init__(self, port, udid=None):
@@ -86,4 +88,25 @@ class PlistService(object):
         self.send(l + payload)
 
     def ssl_start(self, keyfile, certfile):
-        self.s = ssl.wrap_socket(self.s, keyfile, certfile)
+        # = Monkey-Patch! = #
+        socket.ssl._make_ssl_socket = self._nycs_socket
+        self.keyfile = keyfile # no parameter is used in original socket.py
+        #certfile isn't necessary because of TRUST_ALL
+        self.s = socket.ssl(self.s)
+        #It'd be good if this was default behaviour
+        self.s.send = self.s.write
+        self.s.recv = self.s.read
+
+    def _nycs_socket(self, jython_socket):
+        java_net_socket = jython_socket._get_jsocket()
+        host = java_net_socket.getInetAddress().getHostAddress()
+        port = java_net_socket.getPort()
+        client = SSLClient()
+        client.setCheckHostname(False)
+        client.setCheckExpiry(False)
+        client.setCheckCRL(False)
+        client.setKeyMaterial(KeyMaterial(self.keyfile, ""))
+        client.setTrustMaterial(TrustMaterial.TRUST_ALL)
+        s = client.createSocket(java_net_socket, host, port, 0)
+        s.startHandshake()
+        return s
