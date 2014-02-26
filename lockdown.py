@@ -7,7 +7,9 @@ import uuid
 import platform
 import java
 
-HOMEFOLDER = os.path.join(os.environ["ALLUSERSPROFILE"], "Apple", "Lockdown")
+java.lang.System.setProperty("jsse.enableCBCProtection", "false")
+
+HOMEFOLDER = os.path.join(os.environ["HOMEPATH"],".pymobiledevice")
 
 class LockdownClient(object):
     def __init__(self,udid=None):
