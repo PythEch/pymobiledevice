@@ -29,7 +29,7 @@ class PlistService(object):
                 print "Connecting to device: " + dev.serial
 
         #
-        #self.udid = dev.serial ###
+        self.udid = dev.serial ###
         try:
             self.s = mux.connect(dev, self.port)
         except:

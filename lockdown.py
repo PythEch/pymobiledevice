@@ -21,8 +21,9 @@ class LockdownClient(object):
         self.c.sendPlist({"Request":"QueryType"})
         res = self.c.recvPlist()
         assert res["Type"] == "com.apple.mobile.lockdown"
-        self.udid = self.getValue("", "UniqueDeviceID")
-        #print "Device Name : ", self.getValue("", "DeviceName")
+        #self.udid = self.getValue("", "UniqueDeviceID")
+        self.udid = self.c.udid
+        print "Device Name : ", self.getValue("", "DeviceName")
         self.allValues = self.getValue("", "")
         self.UniqueChipID = self.allValues.get("UniqueChipID")
         #self.DevicePublicKey = ""
@@ -87,11 +88,11 @@ class LockdownClient(object):
         self.paired = True
         certPem = pair_record["HostCertificate"].data
         privateKeyPem = pair_record["HostPrivateKey"].data
-        #print "Validate Pairing OK", ValidatePair
+        print "Validate Pairing OK", ValidatePair
         d = {"Request": "StartSession", "HostID": pair_record.get("HostID", self.hostID)}
         self.c.sendPlist(d)
         startsession = self.c.recvPlist()
-        #print "Starting session",startsession
+        print "Starting session",startsession
         self.SessionID = startsession.get("SessionID")
         if startsession.get("EnableSessionSSL"):
             sslfile = self.identifier + "_ssl.txt"
