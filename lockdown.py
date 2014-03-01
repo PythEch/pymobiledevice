@@ -110,7 +110,6 @@ class LockdownClient(object):
 
     def pair(self, pair_record=None):
         if not pair_record:
-            print "Got device public key"
             print "Creating host key & certificate"
             certPem, privateKeyPem, DeviceCertificate = ca_do_everything(self.DevicePublicKey)
 
