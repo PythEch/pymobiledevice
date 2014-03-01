@@ -18,6 +18,10 @@ import base64
 Security.addProvider(BouncyCastleProvider())
 
 def convertPKCS1toPKCS8pubKey(data):
+    """
+    Copyright (c) 2004 Open Source Applications Foundation.
+    Author: Heikki Toivonen
+    """
     subjectpublickeyrsa_start = "30 81 9E 30 0D 06 09 2A 86 48 86 F7 0D 01 01 01 05 00 03 81 8C 00".replace(" ","").decode("hex")
     data = data.replace("-----BEGIN RSA PUBLIC KEY-----", "").replace("-----END RSA PUBLIC KEY-----", "")
     data = base64.b64decode(data)
