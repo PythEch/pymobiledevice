@@ -1,6 +1,8 @@
-import site, os, sys, inspect, java
+import site, os, sys, inspect
 
-if not 'java' in sys.platform.lower():
+try:
+    import java
+except ImportError:
     raise RuntimeError("Unsupported platform: " + sys.platform)
 
 platform = java.lang.System.getProperty('os.name').encode('ascii', 'ignore').lower()

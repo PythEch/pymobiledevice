@@ -7,40 +7,32 @@ import plistlib
 import uuid
 #import socket
 import platform
+import time
 
 #we store pairing records and ssl keys in ~/.pymobiledevice
 HOMEFOLDER = os.path.join(os.environ["HOMEPATH"], ".pymobiledevice")
 
 class LockdownClient(object):
     def __init__(self,udid=None):
-        self.SessionID = None
-        self.c = None
         self.c = PlistService(62078,udid)
         self.hostID = self.generate_hostID()
-        #print "HostID : ", self.hostID
         self.paired = False
         self.label = "pyMobileDevice"
         self.c.sendPlist({"Request":"QueryType"})
         res = self.c.recvPlist()
         assert res["Type"] == "com.apple.mobile.lockdown"
-        self.udid = self.getValue("", "UniqueDeviceID")
-        #print "Device Name : ", self.getValue("", "DeviceName")
         self.allValues = self.getValue("", "")
-        self.UniqueChipID = self.allValues.get("UniqueChipID")
-        #self.DevicePublicKey = ""
-        self.DevicePublicKey =  self.getValue("", "DevicePublicKey")
-
-        #pprint(self.allValues)
-        #self.udid  = self.c.udid
-        self.identifier = self.udid
-        #if not self.identifier:
-        #    if self.UniqueChipID:
-        #        self.identifier = "%x" % self.UniqueChipID
-        #    else:
-        #        print "Could not get UDID or ECID, failing"
-        #        raise
+        self.udid = self.allValues.get("UniqueDeviceID")
+        self.osVersion = self.allValues.get("ProductVersion")
+        self.is_iOS7 = (self.osVersion[0] == "7")
+        self.DevicePublicKey = self.allValues.get("DevicePublicKey").data
+        
         if not self.validate_pairing():
             if not self.pair():
+                return
+            if self.is_iOS7: #usbmux is resetted
+                time.sleep(5) #FIXME: What happens if this takes more than 5 seconds?
+                self.__init__(self.udid)
                 return
             self.validate_pairing()
 
@@ -75,31 +67,27 @@ class LockdownClient(object):
             #    print "StopSession fail :", res
                     
     def validate_pairing(self):
-        pair_record = None
-        certPem = None
-        privateKeyPem = None
-        
-        record = readHomeFile(HOMEFOLDER, "%s.plist" % self.identifier)
+        record = readHomeFile(HOMEFOLDER, "%s.plist" % self.udid)
         if record:
             pair_record = plistlib.readPlistFromString(record)
             certPem = pair_record["HostCertificate"].data
             privateKeyPem = pair_record["HostPrivateKey"].data
             print "Found pairing record for device %s" % self.udid
         else:
-            print "No pairing record found for device %s" % self.identifier
-            return
+            print "No pairing record found for device %s" % self.udid
+            return False
         if False:
             if sys.platform == "win32":
                 folder = os.environ["ALLUSERSPROFILE"] + "/Apple/Lockdown/"
             elif sys.platform == "darwin":
                 folder = "/var/db/lockdown/"
-            pair_record = plistlib.readPlist(folder + "%s.plist" % self.identifier)
+            pair_record = plistlib.readPlist(folder + "%s.plist" % self.udid)
             print "Using iTunes pair record"
             
         ValidatePair = {"Request": "ValidatePair", "PairRecord": pair_record}
         self.c.sendPlist(ValidatePair)
         ValidatePair = self.c.recvPlist()
-        if not ValidatePair or ValidatePair.has_key("Error"):
+        if not ValidatePair or "Error" in ValidatePair:
             pair_record =None
             print "ValidatePair fail", ValidatePair
             return False
@@ -111,7 +99,7 @@ class LockdownClient(object):
         #print "Starting session",startsession
         self.SessionID = startsession.get("SessionID")
         if startsession.get("EnableSessionSSL"):
-            sslfile = self.identifier + "_ssl.txt"
+            sslfile = self.udid + "_ssl.txt"
             sslfile = writeHomeFile(HOMEFOLDER, sslfile, certPem + "\n" + privateKeyPem)
             self.c.ssl_start(sslfile, sslfile)
             #print "SSL started"
@@ -120,30 +108,32 @@ class LockdownClient(object):
             #print "UDID", self.udid
         return True
 
-    def pair(self):
-        self.DevicePublicKey =  self.getValue("", "DevicePublicKey")
-        if self.DevicePublicKey == '':
-            return
-        print "Got device public key"
-        print "Creating host key & certificate"
-        certPem, privateKeyPem, DeviceCertificate = ca_do_everything(self.DevicePublicKey)
+    def pair(self, pair_record=None):
+        if not pair_record:
+            print "Got device public key"
+            print "Creating host key & certificate"
+            certPem, privateKeyPem, DeviceCertificate = ca_do_everything(self.DevicePublicKey)
 
-        pair_record = {"DevicePublicKey": plistlib.Data(self.DevicePublicKey),
-                       "DeviceCertificate": plistlib.Data(DeviceCertificate),
-                       "HostCertificate": plistlib.Data(certPem),
-                       "HostID": self.hostID,
-                       "RootCertificate": plistlib.Data(certPem),
-                       "SystemBUID": "30142955-444094379208051516"
-        }
+            pair_record = {"DevicePublicKey": plistlib.Data(self.DevicePublicKey),
+                           "DeviceCertificate": plistlib.Data(DeviceCertificate),
+                           "HostCertificate": plistlib.Data(certPem),
+                           "HostPrivateKey": plistlib.Data(privateKeyPem),
+                           "HostID": self.hostID,
+                           "RootCertificate": plistlib.Data(certPem),
+                           "SystemBUID": "30142955-444094379208051516"
+            }
+            
         Pair = {"Request": "Pair", "PairRecord": pair_record}
         self.c.sendPlist(Pair)
         Pair = self.c.recvPlist()
-        if Pair and  Pair.get("Result") == "Success" or Pair.has_key("EscrowBag"):
-            #print "Pairing OK"
-            pair_record["HostPrivateKey"] = plistlib.Data(privateKeyPem)
+        if "Error" in Pair and self.is_iOS7 and Pair["Error"] == "PasswordProtected":
+            print "\n\nPlease tap 'Trust This Computer' on your iDevice...\n"
+            time.sleep(5)
+            return self.pair(pair_record)
+        if Pair and Pair.get("Result") == "Success" or Pair.has_key("EscrowBag"):
             if Pair.has_key("EscrowBag"):
                 pair_record["EscrowBag"] = Pair["EscrowBag"]
-            writeHomeFile(HOMEFOLDER, "%s.plist" % self.identifier, plistlib.writePlistToString(pair_record))
+            writeHomeFile(HOMEFOLDER, "%s.plist" % self.udid, plistlib.writePlistToString(pair_record))
             return True
         print "Pairing error", Pair
         return False
