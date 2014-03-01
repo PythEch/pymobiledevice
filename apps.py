@@ -44,20 +44,6 @@ installd
 if stat("/var/mobile/tdmtanf") => "TDMTANF Bypass" => SignerIdentity bypass
 """
 
-def mobile_install_old(lockdown):
-    mci = lockdown.startService("com.apple.mobile.installation_proxy")
-   
-    #print mci.sendPlist({"Command":"Archive","ApplicationIdentifier": "com.joystickgenerals.STActionPig"})
-    print mci.sendPlist({"Command":"Install",
-                         #"ApplicationIdentifier": "com.gotohack.JBChecker",
-                         "PackagePath": "test.ipa"})
-    
-    while True:
-        z =  mci.recvPlist()
-        if not z:
-            break
-        pprint(z)
-
 def mobile_install(lockdown,ipaPath):
     #Start afc service & upload ipa    
     afc = AFCClient(lockdown)
