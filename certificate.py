@@ -5,7 +5,6 @@ from java.security import Security, KeyPairGenerator, KeyFactory
 from java.security.cert import CertificateFactory
 from javax.security.auth.x500 import X500Principal
 
-from java.io import ByteArrayInputStream, FileOutputStream
 from java.util import Calendar
 from java.math import BigInteger
 
@@ -14,57 +13,60 @@ from org.bouncycastle.jce.provider import BouncyCastleProvider
 
 from java.security.spec import X509EncodedKeySpec
 
-import array
-import java
+import base64
 
 Security.addProvider(BouncyCastleProvider())
 
+def convertPKCS1toPKCS8pubKey(data):
+    subjectpublickeyrsa_start = "30 81 9E 30 0D 06 09 2A 86 48 86 F7 0D 01 01 01 05 00 03 81 8C 00".replace(" ","").decode("hex")
+    data = data.replace("-----BEGIN RSA PUBLIC KEY-----", "").replace("-----END RSA PUBLIC KEY-----", "")
+    data = base64.b64decode(data)
+    if data.startswith("30 81 89 02 81 81 00".replace(" ","").decode("hex")):
+        #HAX remove null byte to make 128 bytes modulus
+        data = "30 81 88 02 81 80".replace(" ","").decode("hex") + data[7:]
+    z = base64.b64encode(subjectpublickeyrsa_start + data)
+    #res = "-----BEGIN PUBLIC KEY-----\n" # we'll use DER format
+    res = ""
+    for i in xrange(len(z)/64 + 1):
+        res += z[i*64:(i+1)*64] + "\n"
+    #res += "-----END PUBLIC KEY-----"
+    return res
+
 def ca_do_everything(DevicePublicKey):
+    # Generate random 2048-bit private and public keys
     keyPairGenerator = KeyPairGenerator.getInstance("RSA")
     keyPairGenerator.initialize(2048)
     keyPair = keyPairGenerator.genKeyPair()
 
+    # Make it valid for 10 years
     calendar = Calendar.getInstance()
     startDate = calendar.getTime()
     calendar.add(Calendar.YEAR, 10)
     expiryDate = calendar.getTime()
 
     certGen = X509V1CertificateGenerator()
-    dnName = X500Principal("CN=Test CA Certificate")
+    dnName = X500Principal("CN=Pymobiledevice Self-Signed CA Certificate")
 
     certGen.setSerialNumber(BigInteger.ONE)
     certGen.setIssuerDN(dnName)
     certGen.setNotBefore(startDate)
     certGen.setNotAfter(expiryDate)
-    certGen.setSubjectDN(dnName)
+    certGen.setSubjectDN(dnName) # subject = issuer
     certGen.setPublicKey(keyPair.getPublic())
     certGen.setSignatureAlgorithm("SHA1withRSA")
 
-    #FIXME: Find a way to generate DER certificate
-    #For some reason, Java doesn't like PEM format
-    #I can't load DevicePublicKey as PEM
-    #
-    #Maybe we can use BouncyCastle for this?
+    #Load PKCS#1 RSA Public Key
+    spec = X509EncodedKeySpec(convertPKCS1toPKCS8pubKey(DevicePublicKey).decode("base64"))
+    pubKey = KeyFactory.getInstance("RSA").generatePublic(spec)
 
-    f = java.io.File("pub.der")
-    fis = java.io.FileInputStream(f)
-    dis = java.io.DataInputStream(fis)
-    keyBytes = array.zeros("b",f.length())
-    dis.readFully(keyBytes)
-    dis.close()
+    certPem = "-----BEGIN CERTIFICATE-----\n" + certGen.generate(keyPair.getPrivate(), "BC").getEncoded().tostring().encode("base64") + "-----END CERTIFICATE-----\n"
 
-    spec = X509EncodedKeySpec(keyBytes)
-    kf = KeyFactory.getInstance("RSA")
-    pubKey = kf.generatePublic(spec)
-
-    cert = "-----BEGIN CERTIFICATE-----\n" + certGen.generate(keyPair.getPrivate(), "BC").getEncoded().tostring().encode("base64") + "\n-----END CERTIFICATE-----\n"
-
-    key = "-----BEGIN PRIVATE KEY-----\n" + keyPair.getPrivate().getEncoded().tostring().encode("base64") + "\n-----END PRIVATE KEY-----\n"
+    privateKeyPem = "-----BEGIN PRIVATE KEY-----\n" + keyPair.getPrivate().getEncoded().tostring().encode("base64") + "-----END PRIVATE KEY-----\n"
     
     certGen.setPublicKey(pubKey)
-    dnName = X500Principal("CN=Device")
+    dnName = X500Principal("CN=Pymobiledevice Self-Signed Device Certificate")
     certGen.setSubjectDN(dnName)
 
-    cert2  = "-----BEGIN CERTIFICATE-----\n" + certGen.generate(keyPair.getPrivate(), "BC").getEncoded().tostring().encode("base64") + "\n-----END CERTIFICATE-----\n"
+    DeviceCertificate  = "-----BEGIN CERTIFICATE-----\n" + certGen.generate(keyPair.getPrivate(), "BC").getEncoded().tostring().encode("base64") + "-----END CERTIFICATE-----\n"
 
-    return cert, key, cert2
+    return certPem, privateKeyPem, DeviceCertificate
