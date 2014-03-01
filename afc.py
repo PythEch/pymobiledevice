@@ -390,12 +390,16 @@ class AFCShell(Cmd):
         d = self.afc.file_remove(self.curdir + "/" + p)
         
     def do_pull(self, p):
-        data = self.afc.get_file_contents(self.curdir + "/" + p)
-        if data and p.endswith(".plist"):
+        t = p.split()
+        data = self.afc.get_file_contents(self.curdir + "/" + t[0])
+        if data and t[0].endswith(".plist"):
             z = parsePlist(data)
-            plistlib.writePlist(z, os.path.basename(p))
+            plistlib.writePlist(z, os.path.basename(t[0]))
         else:
-            open(os.path.basename(p), "wb").write(data)
+            if len(t) == 2:
+                open(t[1], "wb").write(data)
+            else:
+                open(os.path.basename(t[0]), "wb").write(data)
 
     def do_push(self, p):
         t = p.split()
@@ -403,7 +407,7 @@ class AFCShell(Cmd):
             return
         data = open(t[1], "rb").read()
         self.afc.set_file_contents(self.curdir + "/" + t[0], data)
-            
+        
     def do_head(self, p):
         print self.afc.get_file_contents(self.curdir + "/" + p)[:32]
 
