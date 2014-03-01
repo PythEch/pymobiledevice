@@ -15,9 +15,12 @@ else:
 
 java.lang.System.setProperty("jsse.enableCBCProtection", "false")
 
-site.addsitedir(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+#working directory
+wd = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
-wd = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'jar')
-for jar in os.listdir(wd):
-    sys.path.append(os.path.join(wd, jar))
+site.addsitedir(wd)
+
+jar_dir = os.path.join(wd, 'jar')
+for jar in os.listdir(jar_dir):
+    sys.path.append(os.path.join(jar_dir, jar))
     
