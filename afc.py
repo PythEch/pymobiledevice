@@ -411,7 +411,7 @@ class AFCShell(Cmd):
         self.afc.set_file_contents(self.curdir + "/" + t[0], data)
 
     def do_hexdump(self, p):
-        t = p.split(" ")
+        t = p.split()
         l = 0
         if len(t) < 1:
             return
@@ -429,7 +429,17 @@ class AFCShell(Cmd):
 
     def do_infos(self, p):
         return self.afc.get_device_infos()
-        
+
+    def do_rmdir(self, p):
+        return self.afc.remove_directory(p)
+
+    def do_mv(self, p):
+        t = p.split()
+        return self.afc.file_rename(t[0], t[1])
+
+    def do_about(self, p):
+        return self.afc.get_file_info(p)
+
 if __name__ == "__main__":
     #lockdown = LockdownClient()
     #afc = AFCClient(lockdown)
