@@ -21,9 +21,7 @@ System.setProperty("jsse.enableCBCProtection", "false")
 wd = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 site.addsitedir(wd)
-try:
-    isEmbedded #I define this in my Java code.
-except NameError:
+if len([s for s in sys.path if "pymobiledevice\\jar\\" in s]) == 0:
     jar_dir = os.path.join(wd, 'jar')
     for jar in os.listdir(jar_dir):
         sys.path.append(os.path.join(jar_dir, jar))
