@@ -18,7 +18,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-import socket, struct, sys, java
+import socket, struct, sys
+from java.lang import System
 from select import cpython_compatible_select as select
 
 try:
@@ -149,7 +150,7 @@ class PlistProtocol(BinaryProtocol):
 class MuxConnection(object):
 	def __init__(self, socketpath, protoclass):
 		self.socketpath = socketpath
-		if "Windows" in java.lang.System.getProperty('os.name').encode('ascii','ignore'):
+		if "Windows" in System.getProperty('os.name').encode('ascii','ignore'):
 			family = socket.AF_INET
 			address = ('127.0.0.1', 27015)
 		else:

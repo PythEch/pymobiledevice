@@ -1,7 +1,7 @@
 import struct
 import time
 import sys
-import java
+from java.lang import System
 from lockdown import LockdownClient
 
 """
@@ -60,7 +60,7 @@ class Win32Pipe(object):
         return errCode == 0
 
 if __name__ == "__main__":
-    if "Windows" in java.lang.System.getProperty('os.name').encode('ascii','ignore'):
+    if "Windows" in System.getProperty('os.name').encode('ascii','ignore'):
         import win32pipe, win32file
         output = Win32Pipe()
     else:

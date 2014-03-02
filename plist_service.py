@@ -5,7 +5,6 @@ import struct
 from pprint import pprint
 from re import sub
 import socket
-import java
 from org.apache.commons.ssl import SSLClient, KeyMaterial, TrustMaterial
 
 class PlistService(object):
