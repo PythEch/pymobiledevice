@@ -1,11 +1,11 @@
 import site, os, sys, inspect
 
 try:
-    import java
+    from java.lang import System
 except ImportError:
     raise RuntimeError("Unsupported platform: " + sys.platform)
 
-platform = java.lang.System.getProperty('os.name').encode('ascii', 'ignore').lower()
+platform = System.getProperty('os.name').encode('ascii', 'ignore').lower()
 if 'windows' in platform:
     iswindows = True
 elif 'os x' in platform:
@@ -15,7 +15,7 @@ elif 'linux' in platform:
 else:
     raise RuntimeError("Unsupported OS: " + platform)
 
-java.lang.System.setProperty("jsse.enableCBCProtection", "false")
+System.setProperty("jsse.enableCBCProtection", "false")
 
 #working directory
 wd = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
