@@ -346,7 +346,7 @@ class AFCShell(Cmd):
         return True
     
     def do_pwd(self, p):
-        print self.curdir
+        return self.curdir
             
     def do_link(self, p):
         z = p.split()
@@ -375,16 +375,18 @@ class AFCShell(Cmd):
     
     def do_ls(self, p):
         d = self.afc.read_directory(self.curdir + "/" + p)
+        l = ""
         if d:
             for dd in d:
-                print dd
+                l += "\n" + dd
+        return l[1:]
     
     def do_cat(self, p):
         data = self.afc.get_file_contents(self.curdir + "/" + p)
         if data and p.endswith(".plist"):
-            pprint(parsePlist(data))
+            return parsePlist(data)
         else:
-            print data
+            return data
 
     def do_rm(self, p):
         d = self.afc.file_remove(self.curdir + "/" + p)
@@ -407,9 +409,6 @@ class AFCShell(Cmd):
             return
         data = open(t[1], "rb").read()
         self.afc.set_file_contents(self.curdir + "/" + t[0], data)
-        
-    def do_head(self, p):
-        print self.afc.get_file_contents(self.curdir + "/" + p)[:32]
 
     def do_hexdump(self, p):
         t = p.split(" ")
@@ -423,13 +422,13 @@ class AFCShell(Cmd):
             return
         if l:
             z = z[:l]
-        hexdump(z)
+        return hexdump(z)
     
     def do_mkdir(self, p):
-        print self.afc.make_directory(p)
+        return self.afc.make_directory(p)
 
     def do_infos(self, p):
-        print self.afc.get_device_infos()
+        return self.afc.get_device_infos()
         
 if __name__ == "__main__":
     #lockdown = LockdownClient()

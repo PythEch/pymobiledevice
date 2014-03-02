@@ -92,9 +92,11 @@ hex = lambda data: " ".join("%02X" % ord(i) for i in data)
 ascii = lambda data: "".join(c if 31 < ord(c) < 127 else "." for c in data)
 
 def hexdump(d):
+    hexStr = ""
     for i in xrange(0,len(d),16):
         data = d[i:i+16]
-        print "%08X | %s | %s" % (i, hex(data).ljust(47), ascii(data))
+        hexStr += "%08X | %s | %s" % (i, hex(data).ljust(47), ascii(data))
+    return hexStr
 
 def search_plist(directory, matchDict):
     for p in map(os.path.normpath, glob.glob(directory + "/*.plist")):
