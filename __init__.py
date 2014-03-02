@@ -21,8 +21,11 @@ System.setProperty("jsse.enableCBCProtection", "false")
 wd = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 site.addsitedir(wd)
-
-jar_dir = os.path.join(wd, 'jar')
-for jar in os.listdir(jar_dir):
-    sys.path.append(os.path.join(jar_dir, jar))
-    
+try:
+    isEmbedded #I define this in my Java code.
+except NameError:
+    jar_dir = os.path.join(wd, 'jar')
+    for jar in os.listdir(jar_dir):
+        sys.path.append(os.path.join(jar_dir, jar))
+#else:
+    #Jython is embedded in Java. Let Java take care of the jar dependencies.
