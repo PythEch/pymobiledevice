@@ -11,7 +11,7 @@ class PlistService(object):
     def __init__(self, port, udid=None):
         self.port = port
         self.connect(udid)
-        
+
     def connect(self, udid=None):
         mux = usbmux.USBMux()
         mux.process(1.0)
@@ -39,13 +39,13 @@ class PlistService(object):
 
     def close(self):
         self.s.close()
-    
+
     def recv(self, len=4096):
         return self.s.recv(len)
-    
+
     def send(self, data):
         return self.s.send(data)
-    
+
     def recv_exact(self, l):
         data = ""
         while l > 0:
@@ -62,10 +62,10 @@ class PlistService(object):
             return
         l = struct.unpack(">L", l)[0]
         return self.recv_exact(l)
-    
+
     def send_raw(self, data):
         return self.send(struct.pack(">L", len(data)) + data)
-    
+
     def recvPlist(self):
         payload = self.recv_raw()
         #print '<<<<<<<<',payload
@@ -75,11 +75,11 @@ class PlistService(object):
             return BPlistReader(payload).parse()
         elif payload.startswith("<?xml"):
             #HAX lockdown HardwarePlatform with null bytes
-            payload = sub('[^\w<>\/ \-_0-9\"\'\\=\.\?\!\+]+','', payload.decode('utf-8')).encode('utf-8') 
+            payload = sub('[^\w<>\/ \-_0-9\"\'\\=\.\?\!\+]+','', payload.decode('utf-8')).encode('utf-8')
             return plistlib.readPlistFromString(payload)
         else:
             raise Exception("recvPlist invalid data : %s" % payload[:100].encode("hex"))
-    
+
     def sendPlist(self, d):
         payload = plistlib.writePlistToString(d)
         #print '>>>>',payload

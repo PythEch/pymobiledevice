@@ -26,7 +26,7 @@ class LockdownClient(object):
         self.osVersion = self.allValues.get("ProductVersion")
         self.is_iOS7 = (self.osVersion[0] == "7")
         self.DevicePublicKey = self.allValues.get("DevicePublicKey").data
-        
+
         if not self.validate_pairing():
             if not self.pair():
                 return
@@ -42,7 +42,7 @@ class LockdownClient(object):
         hostid = uuid.uuid3(uuid.NAMESPACE_DNS, hostname)
         return str(hostid).upper()
 
-        
+
     #def __del__(self):
     #    self.stop_session()
     #    if self.c :
@@ -51,11 +51,11 @@ class LockdownClient(object):
     #        return res
     #    #if not res or res.get("Result") != "Success":
     #    #    print "Goodbye fail :", res
-       
+
     def enter_recovery(self):
         self.c.sendPlist({"Request": "EnterRecovery"})
         print self.c.recvPlist()
-    
+
     def stop_session(self):
         if self.SessionID and self.c:
             self.c.sendPlist({"Request": "StopSession", "SessionID": self.SessionID})
@@ -65,7 +65,7 @@ class LockdownClient(object):
             #pprint(res)
             #if not res or res.get("Result") != "Success":
             #    print "StopSession fail :", res
-                    
+
     def validate_pairing(self):
         record = readHomeFile(HOMEFOLDER, "%s.plist" % self.udid)
         if record:
@@ -83,7 +83,7 @@ class LockdownClient(object):
                 folder = "/var/db/lockdown/"
             pair_record = plistlib.readPlist(folder + "%s.plist" % self.udid)
             print "Using iTunes pair record"
-            
+
         ValidatePair = {"Request": "ValidatePair", "PairRecord": pair_record}
         self.c.sendPlist(ValidatePair)
         ValidatePair = self.c.recvPlist()
@@ -95,7 +95,7 @@ class LockdownClient(object):
         #print "Validate Pairing OK", ValidatePair
         d = {"Request": "StartSession", "HostID": pair_record.get("HostID", self.hostID)}
         self.c.sendPlist(d)
-        startsession = self.c.recvPlist() 
+        startsession = self.c.recvPlist()
         #print "Starting session",startsession
         self.SessionID = startsession.get("SessionID")
         if startsession.get("EnableSessionSSL"):
@@ -121,7 +121,7 @@ class LockdownClient(object):
                            "RootCertificate": plistlib.Data(certPem),
                            "SystemBUID": "30142955-444094379208051516"
             }
-            
+
         Pair = {"Request": "Pair", "PairRecord": pair_record}
         self.c.sendPlist(Pair)
         Pair = self.c.recvPlist()
@@ -136,10 +136,10 @@ class LockdownClient(object):
             return True
         print "Pairing error", Pair
         return False
-    
+
     def getValue(self, domain=None, key=None):
         req = {"Request":"GetValue", "Label": self.label}
-        
+
         if domain:
             req["Domain"] = domain
         if key:
@@ -151,7 +151,7 @@ class LockdownClient(object):
             if hasattr(r, "data"):
                 return r.data
             return r
-        
+
     def startService(self, name):
         if not self.paired:
             print "Cannot startService %s, not paired" % name

@@ -10,7 +10,7 @@ class ASRClient(object):
         self.size = os.path.getsize(payloadFile)
         self.packet_payload_size = 1450
         self.f = open(payloadFile, "rb")
-        
+
     def initiate(self, msg):
         r = {"Checksum Chunk Size": 131072,
              "FEC Slice Stride": 40,
@@ -22,7 +22,7 @@ class ASRClient(object):
              }
         print "ASR: init"
         self.s.sendPlist(r)
-    
+
     def handle_oob_request(self, msg):
         length = msg["OOB Length"]
         offset = msg["OOB Offset"]
@@ -30,11 +30,11 @@ class ASRClient(object):
         self.f.seek(offset)
         data = self.f.read(length)
         self.s.send_raw(data)
-        
+
     def send_payload(self, msg):
         self.f.seek(0)
         i = self.size
-        
+
         print "ASR: sending payload (%d bytes)" % self.size
         pbar = ProgressBar(self.size)
         pbar.start()
@@ -44,7 +44,7 @@ class ASRClient(object):
             i += len(data)
             pbar.update(i)
         pbar.finish()
-        
+
     def work_loop(self):
         while True:
             msg = self.s.recvPlist()
@@ -52,7 +52,7 @@ class ASRClient(object):
                 break
             Command = msg["Command"]
             pprint(msg)
-            
+
             if Command == "Initiate":
                 self.initiate(msg)
             elif Command == "OOBData":

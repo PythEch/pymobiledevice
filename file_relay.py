@@ -27,7 +27,7 @@ class FileRelayClient(object):
         print "Disconecting..."
         self.service.close()
 
-    def request_sources(self, sources=["UserDatabases"]):  
+    def request_sources(self, sources=["UserDatabases"]):
         print "Downloading sources ", sources
         self.service.sendPlist({"Sources":sources})
         res = self.service.recvPlist()
@@ -42,7 +42,7 @@ class FileRelayClient(object):
                         z += x
                     return z
         return None
-       
+
 if __name__ == "__main__":
     lockdown = LockdownClient()
     ProductVersion = lockdown.getValue("", "ProductVersion")

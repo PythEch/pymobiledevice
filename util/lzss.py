@@ -68,4 +68,3 @@ def decompress_lzss(str):
                 text_buf[r] = c; r += 1
                 r &= (N - 1)
     return dst.tostring()
-

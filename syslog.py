@@ -15,7 +15,7 @@ class Syslog(object):
             self.lockdown = LockdownClient()
         self.c = self.lockdown.startService("com.apple.syslog_relay")
         self.c.send("watch")
-                  
+
 
     def watch(self,procName=None,logFile=None):
         if logFile:
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     parser.add_option("-o", "--logfile", dest="logFile", default=False,
                   help="Write Logs into specified file", type="string")
     (options, args) = parser.parse_args()
-    
+
     try:
         while True:
             try:
@@ -51,6 +51,6 @@ if __name__ == "__main__":
             else:
                 pass
 
-    
-    except (KeyboardInterrupt, SystemExit): 
+
+    except (KeyboardInterrupt, SystemExit):
         exit()

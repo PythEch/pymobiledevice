@@ -15,17 +15,17 @@ class FileBlockDevice(object):
         self.writeFlag = write
         self.size = os.path.getsize(filename)
         self.setBlockSize(8192)
-        
+
     def setBlockSize(self, bs):
         self.blockSize = bs
         self.nBlocks = self.size / bs
-        
+
     def readBlock(self, blockNum):
         os.lseek(self.fd, self.offset + self.blockSize * blockNum, os.SEEK_SET)
         return os.read(self.fd, self.blockSize)
 
     def write(self, offset, data):
-        if self.writeFlag: #fail silently for testing 
+        if self.writeFlag: #fail silently for testing
             os.lseek(self.fd, self.offset + offset, os.SEEK_SET)
             return os.write(self.fd, data)
 
@@ -41,7 +41,7 @@ class FTLBlockDevice(object):
         self.lbaoffset = first_lba
         self.last_lba = last_lba
         self.setBlockSize(self.pageSize)
-        
+
     def setBlockSize(self, bs):
         self.blockSize = bs
         self.lbasPerPage = self.pageSize / bs
@@ -49,7 +49,7 @@ class FTLBlockDevice(object):
         self.pagesPerLBA = bs / self.pageSize
         if bs > self.pageSize:
             pass#raise Exception("FTLBlockDevice lba-size > pageSize not handled")
-        
+
     def readBlock(self, blockNum):
         #if (self.lbaoffset + blockNum / self.lbasPerPage) > self.last_lba:
         #    print "readBlock past last lba", blockNum
@@ -66,7 +66,7 @@ class FTLBlockDevice(object):
 
     def write(self, offset, data):
         raise Exception("FTLBlockDevice write method not implemented")
-    
+
     def writeBlock(self, lba, block):
         raise Exception("FTLBlockDevice writeBlock method not implemented")
 
@@ -77,7 +77,7 @@ class FTLBlockDevice(object):
         if "Windows" in System.getProperty('os.name').encode('ascii','ignore'):
             flags |= os.O_BINARY
         fd=os.open(outputfilename, flags)
-        
+
         pbar = ProgressBar(self.last_lba - self.lbaoffset - 1)
         pbar.start()
         for i in xrange(self.lbaoffset, self.last_lba):
@@ -108,12 +108,12 @@ class IMG3BlockDevice(object):
         self.offset = 0x40
         self.size = os.path.getsize(filename)
         self.setBlockSize(8192)
-        
+
     def setBlockSize(self, bs):
         self.blockSize = bs
         self.nBlocks = self.size / bs
         self.ivs = {0: self.iv0}
-    
+
     def getIVforBlock(self, blockNum):
         #read last 16 bytes of previous block to get IV
         if not self.ivs.has_key(blockNum):
@@ -129,7 +129,7 @@ class IMG3BlockDevice(object):
         return data
 
     def _write(self, offset, data):
-        if self.writeFlag: #fail silently for testing 
+        if self.writeFlag: #fail silently for testing
             os.lseek(self.fd, self.offset + offset, os.SEEK_SET)
             return os.write(self.fd, data)
 

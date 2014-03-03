@@ -63,7 +63,7 @@ def __decode_multibyte_int(b, signed=True):
         fmt = ">q"
     else:
         raise BplistError("Cannot decode multibyte int of length {0}".format(len(b)))
-    
+
     if signed and len(b) > 1:
         return struct.unpack(fmt.lower(), b)[0]
     else:
@@ -77,7 +77,7 @@ def __decode_float(b, signed=True):
     else:
         raise BplistError("Cannot decode float of length {0}".format(len(b)))
 
-    if signed: 
+    if signed:
         return struct.unpack(fmt.lower(), b)[0]
     else:
         return struct.unpack(fmt.upper(), b)[0]
@@ -225,7 +225,7 @@ def __decode_object(f, offset, collection_offset_size, offset_table):
         value_refs = []
         for i in range(dict_count):
             value_refs.append(__decode_multibyte_int(f.read(collection_offset_size), False))
-        
+
         dict_result = {}
         for i in range(dict_count):
             #print("Key ref: {0}\tVal ref: {1}".format(key_refs[i], value_refs[i]))
@@ -255,7 +255,7 @@ def load(f):
     offset_table = []
     for i in range(object_count):
         offset_table.append(__decode_multibyte_int(f.read(offset_int_size), False))
-    
+
     return __decode_object(f, offset_table[top_level_object_index], collection_offset_size, offset_table)
 
 
@@ -291,13 +291,13 @@ class NsKeyedArchiverList(list):
     def __iter__(self):
         for o in super(NsKeyedArchiverList, self).__iter__():
             yield NSKeyedArchiver_convert(o, self.object_table)
-        
+
 
 def deserialise_NsKeyedArchiver(obj):
     """Deserialises an NSKeyedArchiver bplist rebuilding the structure.
        obj should usually be the top-level object returned by the load()
        function."""
-    
+
     # Check that this is an archiver and version we understand
     if not isinstance(obj, dict):
         raise TypeError("obj must be a dict")
@@ -311,7 +311,7 @@ def deserialise_NsKeyedArchiver(obj):
         return NSKeyedArchiver_convert(obj["$top"]["root"], object_table)
     else:
         return NSKeyedArchiver_convert(obj["$top"], object_table)
-    
+
 # NSMutableDictionary convenience functions
 def is_nsmutabledictionary(obj):
     if not isinstance(obj, dict):
@@ -331,17 +331,17 @@ def is_nsmutabledictionary(obj):
         return False
 
     return True
-    
+
 def convert_NSMutableDictionary(obj):
     """Converts a NSKeyedArchiver serialised NSMutableDictionary into
        a straight dictionary (rather than two lists as it is serialised
        as)"""
-    
+
     # The dictionary is serialised as two lists (one for keys and one
     # for values) which obviously removes all convenience afforded by
-    # dictionaries. This function converts this structure to an 
+    # dictionaries. This function converts this structure to an
     # actual dictionary so that values can be accessed by key.
-    
+
     if not is_nsmutabledictionary(obj):
         raise ValueError("obj does not have the correct structure for a NSMutableDictionary serialised to a NSKeyedArchiver")
     keys = obj["NS.keys"]
@@ -360,5 +360,5 @@ def convert_NSMutableDictionary(obj):
         if "k" in result:
             raise ValueError("The 'NS.keys' list contains duplicate entries")
         result[k] = vals[i]
-    
+
     return result

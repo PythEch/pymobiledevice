@@ -17,7 +17,7 @@ def house_arrest(lockdown, applicationId):
     res = mis.recvPlist()
     #pprint(res)
     error = res.get("Error")
-    if error: 
+    if error:
         print res["Error"]
         return None
     return AFCClient(lockdown, service=mis)
@@ -27,7 +27,7 @@ def house_arrest_shell(lockdown, applicationId):
     AFCShell(afc=afc).cmdloop()
     #print afc.read_directory("/")
 
-    
+
 """
 "Install"
 "Upgrade"
@@ -45,7 +45,7 @@ if stat("/var/mobile/tdmtanf") => "TDMTANF Bypass" => SignerIdentity bypass
 """
 
 def mobile_install(lockdown,ipaPath):
-    #Start afc service & upload ipa    
+    #Start afc service & upload ipa
     afc = AFCClient(lockdown)
     afc.set_file_contents("/" + os.path.basename(ipaPath), open(ipaPath,'rb').read())
     mci = lockdown.startService("com.apple.mobile.installation_proxy")
@@ -66,7 +66,7 @@ def mobile_install(lockdown,ipaPath):
 
 def list_apps(lockdown):
     mci = lockdown.startService("com.apple.mobile.installation_proxy")
-    #print 
+    #print
     mci.sendPlist({"Command":"Lookup"})
     res = mci.recvPlist()
     for app in res["LookupResult"].values():
@@ -83,7 +83,7 @@ def get_apps_BundleID(lockdown,appType="User"):
     res = mci.recvPlist()
     for app in res["LookupResult"].values():
         if app.get("ApplicationType")  == appType:
-	        appList.append(app["CFBundleIdentifier"])
+            appList.append(app["CFBundleIdentifier"])
         #else: #FIXME
         #    appList.append(app["CFBundleIdentifier"])
     mci.close()
@@ -95,11 +95,11 @@ if __name__ == "__main__":
     parser = OptionParser(usage="%prog")
     parser.add_option("-l", "--list", dest="list", action="store_true", default=False,
                   help="List installed applications (non system apps)")
-    parser.add_option("-a", "--app", dest="app", action="store", default=None, 
+    parser.add_option("-a", "--app", dest="app", action="store", default=None,
                   metavar="FILE", help="Access application files with AFC")
-    parser.add_option("-i", "--install", dest="installapp", action="store", default=None, 
+    parser.add_option("-i", "--install", dest="installapp", action="store", default=None,
                   metavar="FILE", help="Install an application package")
-     
+
     (options, args) = parser.parse_args()
     if options.list:
         lockdown = LockdownClient()
@@ -112,4 +112,3 @@ if __name__ == "__main__":
         mobile_install(lockdown, options.installapp)
     else:
         parser.print_help()
-

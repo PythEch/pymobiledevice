@@ -38,7 +38,7 @@ class NPClient(object):
         #Checks if a notification has been sent by the device
         res = self.service.recvPlist()
         pprint(res)
-        return res  
+        return res
 
 
 if __name__ == "__main__":
@@ -48,4 +48,3 @@ if __name__ == "__main__":
 
     np = NPClient()
     np.get_notification()
- 

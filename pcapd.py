@@ -28,10 +28,10 @@ class PcapOut(object):
     def __init__(self, name):
         self.f = open("test.pcap","wb")
         self.f.write(struct.pack("<LHHLLLL", 0xa1b2c3d4, 2, 4, 0, 0, 65535, LINKTYPE_ETHERNET))
-    
+
     def __del__(self):
         self.f.close()
-        
+
     def writePacket(self, packet):
         t = time.time()
         #TODO check milisecond conversion
@@ -65,15 +65,15 @@ if __name__ == "__main__":
         output = Win32Pipe()
     else:
         print "Why not use rvictl ?"
-	output = PcapOut("test2.pcap")
+        output = PcapOut("test2.pcap")
 
     else:
         output = PcapOut()
 
     lockdown = LockdownClient()
-    
+
     pcap = lockdown.startService("com.apple.pcapd")
-    
+
     while True:
         d = pcap.recvPlist()
         if not d:
@@ -92,4 +92,3 @@ if __name__ == "__main__":
             packet = "\xBE\xEF" * 6 + "\x08\x00" + packet
         if not output.writePacket(packet):
             break
-        

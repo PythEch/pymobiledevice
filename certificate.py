@@ -66,7 +66,7 @@ def ca_do_everything(DevicePublicKey):
     certPem = "-----BEGIN CERTIFICATE-----\n" + certGen.generate(keyPair.getPrivate(), "BC").getEncoded().tostring().encode("base64") + "-----END CERTIFICATE-----\n"
 
     privateKeyPem = "-----BEGIN PRIVATE KEY-----\n" + keyPair.getPrivate().getEncoded().tostring().encode("base64") + "-----END PRIVATE KEY-----\n"
-    
+
     certGen.setPublicKey(pubKey)
     dnName = X500Principal("CN=Pymobiledevice Self-Signed Device Certificate")
     certGen.setSubjectDN(dnName)

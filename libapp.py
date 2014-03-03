@@ -43,7 +43,7 @@ class libapp:
         elif not isdir(path):
             print "Error: %s is not dir..." % path
             return
-        
+
     def backup_app(self, ipaPath, backup_app_data=False):
         path = "tmp/"
         if exists(path):
@@ -52,7 +52,7 @@ class libapp:
         ipaDir=dirname(ipaPath)
         if ipaDir != "":
             self.verify_path(ipaDir)
-        
+
         try:
             files = self.afc.read_directory('.')[2:]
         except AttributeError:
@@ -64,7 +64,7 @@ class libapp:
             return
         app=app[0]
         self.recursive_save(join(path, 'Payload', app), join('.', app)) #save .app
-        
+
         if not ('iTunesMetadata.plist' in files and 'iTunesArtwork' in files):
             print "Error: iTunesMetadata.plist or iTunesArtwork not found!"
             return
@@ -83,7 +83,7 @@ class libapp:
                     src=join(root, f)
                     zipf.write(src, src.replace(path,''))
         rmtree(path)
-                    
+
     def backup_app_data(self, path):
         self.verify_path(path)
 
@@ -101,7 +101,7 @@ class libapp:
             print "Error: Cannot transfer files iDevice -> PC"
             print err
             return
-            
+
     def upload_file(self, src, afctarget):
         try:
             self.afc.set_file_contents(afctarget, open(src,'rb').read())
@@ -110,11 +110,11 @@ class libapp:
             print "Error: Cannot transfer files PC -> iDevice"
             print err
             return
-            
+
     def recursive_save(self, path, afcpath='.'):
         dirs=[]
         self.verify_path(path)
-        
+
         for i in self.afc.read_directory(afcpath)[2:]: #list directory (like ls or dir)
             target=join(path,i)
             afcsrc=join(afcpath, i)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--backup", action="store", metavar="<integer>", type=int, help=
                     "Backups an app as .ipa file with specified Application\nIdentifier.\n\nUse -b 1 option if you want to backup app data as well.\nArgs: <AppID> <IPAPath>\n\n")
     parser.add_argument("-d", "--backupdata", action="store_true", help="Backups an application's data.\nArgs: <AppID> <Directory>")
-    
+
     args = parser.parse_args()
     if args.list:
         libapp().list_apps()
