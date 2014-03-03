@@ -10,7 +10,7 @@ import platform
 import time
 
 #we store pairing records and ssl keys in ~/.pymobiledevice
-HOMEFOLDER = os.path.join(os.environ["HOMEPATH"], ".pymobiledevice")
+HOMEFOLDER = '.pymobiledevice'
 
 class LockdownClient(object):
     def __init__(self,udid=None):

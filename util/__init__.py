@@ -23,8 +23,7 @@ def makedirs(dirs):
         pass
 
 def getHomePath(foldername, filename):
-    home = os.path.expanduser('~')
-    folderpath = os.path.join(home, foldername)
+    folderpath = os.path.expanduser(os.path.join('~', foldername))
     if not os.path.exists(folderpath):
         makedirs(folderpath)
     return os.path.join(folderpath, filename)
