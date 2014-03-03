@@ -4,14 +4,13 @@
 from java.security import Security, KeyPairGenerator, KeyFactory
 from java.security.cert import CertificateFactory
 from javax.security.auth.x500 import X500Principal
+from java.security.spec import X509EncodedKeySpec
 
 from java.util import Calendar
 from java.math import BigInteger
 
 from org.bouncycastle.x509 import X509V1CertificateGenerator
 from org.bouncycastle.jce.provider import BouncyCastleProvider
-
-from java.security.spec import X509EncodedKeySpec
 
 import base64
 
@@ -66,7 +65,7 @@ def ca_do_everything(DevicePublicKey):
     certPem = "-----BEGIN CERTIFICATE-----\n" + certGen.generate(keyPair.getPrivate(), "BC").getEncoded().tostring().encode("base64") + "-----END CERTIFICATE-----\n"
 
     privateKeyPem = "-----BEGIN PRIVATE KEY-----\n" + keyPair.getPrivate().getEncoded().tostring().encode("base64") + "-----END PRIVATE KEY-----\n"
-    
+
     certGen.setPublicKey(pubKey)
     dnName = X500Principal("CN=Pymobiledevice Self-Signed Device Certificate")
     certGen.setSubjectDN(dnName)

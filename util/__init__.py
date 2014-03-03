@@ -1,9 +1,9 @@
+import os
 import glob
 import plistlib
-import os
-from bplist import BPlistReader
 import cPickle
 import gzip
+from bplist import BPlistReader
 
 def read_file(filename):
     f = open(filename, "rb")
@@ -23,8 +23,7 @@ def makedirs(dirs):
         pass
 
 def getHomePath(foldername, filename):
-    home = os.path.expanduser('~')
-    folderpath = os.path.join(home, foldername)
+    folderpath = os.path.expanduser(os.path.join('~', foldername))
     if not os.path.exists(folderpath):
         makedirs(folderpath)
     return os.path.join(folderpath, filename)
@@ -40,7 +39,7 @@ def writeHomeFile(foldername, filename, data):
     filepath = getHomePath(foldername, filename)
     write_file(filepath, data)
     return filepath
-    
+
 def readPlist(filename):
     f = open(filename,"rb")
     d = f.read(16)
@@ -62,7 +61,7 @@ def sizeof_fmt(num):
         if num < 1024.0:
             return "%d%s" % (num, x)
         num /= 1024.0
-        
+
 #http://www.5dollarwhitebox.org/drupal/node/84
 def convert_bytes(bytes):
     bytes = float(bytes)
@@ -117,7 +116,7 @@ def save_pickle(filename,data):
     f = gzip.open(filename,"wb")
     cPickle.dump(data, f, cPickle.HIGHEST_PROTOCOL)
     f.close()
-    
+
 def load_pickle(filename):
     f = gzip.open(filename,"rb")
     data = cPickle.load(f)

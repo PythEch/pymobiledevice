@@ -1,7 +1,6 @@
-from lockdown import LockdownClient
-from pprint import pprint
 import plistlib
-
+from pprint import pprint
+from lockdown import LockdownClient
 
 class NPClient(object):
     def __init__(self, lockdown=None, serviceName="com.apple.mobile.notification_proxy"):
@@ -38,7 +37,7 @@ class NPClient(object):
         #Checks if a notification has been sent by the device
         res = self.service.recvPlist()
         pprint(res)
-        return res  
+        return res
 
 
 if __name__ == "__main__":
@@ -48,4 +47,3 @@ if __name__ == "__main__":
 
     np = NPClient()
     np.get_notification()
- 

@@ -1,6 +1,6 @@
-from lockdown import LockdownClient
-from pprint import pprint
 import plistlib
+from pprint import pprint
+from lockdown import LockdownClient
 
 """
 com.apple.mobile.diagnostics_relay
@@ -124,11 +124,11 @@ class DIAGClient(object):
             return res;
         return None
 
-    def action(self, action="Shutdown", flags=None):	
+    def action(self, action="Shutdown", flags=None):
         self.service.sendPlist({"Request": action, })
         res = self.service.recvPlist()
         #pprint(res)
-        return res    
+        return res
 
     def restart(self):
         return self.action("Restart")
@@ -144,7 +144,7 @@ class DIAGClient(object):
         if res.has_key("Diagnostics"):
             return res;
         return None
-            
+
     def ioregistry_entry(self, name=None, ioclass=None):
         req = {}
         req["Request"] = "IORegistry"
@@ -153,14 +153,14 @@ class DIAGClient(object):
 
         if (ioclass):
             req["EntryClass"] = ioclass
-        
+
         self.service.sendPlist(req)
         res = self.service.recvPlist()
         pprint(res)
         if res.has_key("Diagnostics"):
             return res;
         return None
-  
+
     def ioregistry_plane(self, plane):
         req = {}
         req["Request"] = "IORegistry"
