@@ -17,7 +17,7 @@ os_name = System.getProperty('os.name').encode('ascii', 'ignore').lower()
 
 if 'os x' in os_name or 'linux' in os_name:
     raise NotImplementedError("Your OS is not supported yet: " + os_name)
-else:
+elif 'windows' not in os_name:
     raise RuntimeError("Unsupported OS: " + os_name)
 
 # Disable SSL/TLS socket randomization that iOS doesn't like
