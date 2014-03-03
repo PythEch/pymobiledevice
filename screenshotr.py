@@ -1,10 +1,9 @@
-from lockdown import LockdownClient
-from pprint import pprint
+import os
 import plistlib
 from time import gmtime, strftime
 from optparse import OptionParser
-import os
-import plistlib
+from pprint import pprint
+from lockdown import LockdownClient
 
 class screenshotrClient(object):
     def __init__(self, lockdown=None, serviceName='com.apple.mobile.screenshotr'):

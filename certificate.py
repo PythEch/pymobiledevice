@@ -4,14 +4,13 @@
 from java.security import Security, KeyPairGenerator, KeyFactory
 from java.security.cert import CertificateFactory
 from javax.security.auth.x500 import X500Principal
+from java.security.spec import X509EncodedKeySpec
 
 from java.util import Calendar
 from java.math import BigInteger
 
 from org.bouncycastle.x509 import X509V1CertificateGenerator
 from org.bouncycastle.jce.provider import BouncyCastleProvider
-
-from java.security.spec import X509EncodedKeySpec
 
 import base64
 

@@ -1,16 +1,14 @@
-from lockdown import LockdownClient
-from mobilebackup import MobileBackupClient
-from optparse import OptionParser
-from pprint import pprint
-#from util import makedirs, read_file,
-from util import write_file, hexdump
-#from util.bplist import BPlistReader
-from biplist import writePlist, readPlist, Data
 import os
 import hashlib
+import datetime
 from struct import unpack, pack
 from time import mktime, gmtime, sleep, time
-import datetime
+from optparse import OptionParser
+from pprint import pprint
+from biplist import writePlist, readPlist, Data
+from util import write_file, hexdump
+from mobilebackup import MobileBackupClient
+from lockdown import LockdownClient
 
 CODE_SUCCESS = 0x00
 CODE_ERROR_LOCAL =  0x06

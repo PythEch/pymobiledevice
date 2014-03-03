@@ -1,8 +1,8 @@
-from lockdown import LockdownClient
+import os
+from optparse import OptionParser
 from pprint import pprint
 from afc import AFCClient, AFCShell
-from optparse import OptionParser
-import os
+from lockdown import LockdownClient
 
 def house_arrest(lockdown, applicationId):
     try:

@@ -1,8 +1,8 @@
-from lockdown import LockdownClient
+import plistlib
 from optparse import OptionParser
 from pprint import pprint
-import plistlib
 from util import read_file
+from lockdown import LockdownClient
 
 class MobileConfigService(object):
     def __init__(self, lockdown):

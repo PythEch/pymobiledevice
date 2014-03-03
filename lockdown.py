@@ -1,13 +1,12 @@
+import os
+import platform
+import time
+import plistlib
+import uuid
 from plist_service import PlistService
 from pprint import pprint
 from certificate import ca_do_everything
 from util import write_file, readHomeFile, writeHomeFile
-import os
-import plistlib
-import uuid
-#import socket
-import platform
-import time
 
 #we store pairing records and ssl keys in ~/.pymobiledevice
 HOMEFOLDER = '.pymobiledevice'

@@ -1,9 +1,9 @@
+import os
 import glob
 import plistlib
-import os
-from bplist import BPlistReader
 import cPickle
 import gzip
+from bplist import BPlistReader
 
 def read_file(filename):
     f = open(filename, "rb")

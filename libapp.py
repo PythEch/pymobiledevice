@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-from pymobiledevice import apps
-from pymobiledevice.afc import AFCClient
+import zipfile
 from os import makedirs, walk, listdir, sep
 from os.path import exists, isdir, abspath, dirname
 from posixpath import join
 from argparse import ArgumentParser, RawTextHelpFormatter
 from shutil import rmtree
-import zipfile
+from pymobiledevice import apps
+from pymobiledevice.afc import AFCClient
 
 class libapp:
     def __init__(self, appid=None):

@@ -1,6 +1,7 @@
-import struct
-import time
+import os
 import sys
+import time
+import struct
 from java.lang import System
 from lockdown import LockdownClient
 

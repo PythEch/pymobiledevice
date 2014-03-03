@@ -1,7 +1,7 @@
-from lockdown import LockdownClient
-import zlib
 import gzip
+import zlib
 from pprint import pprint
+from lockdown import LockdownClient
 
 SRCFILES = """AppleSupport
 Network

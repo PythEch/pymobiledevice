@@ -1,14 +1,15 @@
+import os
+import time
+import struct
+import plistlib
 from construct.core import Struct
 from construct.lib.container import Container
 from construct.macros import String, ULInt64
-from lockdown import LockdownClient
-import struct
-from cmd import Cmd
-import os
-from util import hexdump, parsePlist
 from pprint import pprint
-import plistlib
-import time
+from cmd import Cmd
+from util import hexdump, parsePlist
+from lockdown import LockdownClient
+
 """
 <key>com.apple.afc</key>
     <dict>
@@ -441,11 +442,13 @@ class AFCShell(Cmd):
         return self.afc.get_file_info(p)
 
 if __name__ == "__main__":
-    #lockdown = LockdownClient()
-    #afc = AFCClient(lockdown)
-    #afc.read_directory("/DCIM/100APPLE/")
-    #d = afc.get_file_contents("/DCIM/100APPLE/IMG_0001.JPG")
-    #open("test.jpg","wb").write(d)
-    #afc.set_file_contents("/test.txt", "hello world")
-    #print afc.get_file_info("/etc/fstab")
+    """
+    lockdown = LockdownClient()
+    afc = AFCClient(lockdown)
+    afc.read_directory("/DCIM/100APPLE/")
+    d = afc.get_file_contents("/DCIM/100APPLE/IMG_0001.JPG")
+    open("test.jpg","wb").write(d)
+    afc.set_file_contents("/test.txt", "hello world")
+    print afc.get_file_info("/etc/fstab")
+    """
     AFCShell().cmdloop("Hello")

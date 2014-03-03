@@ -1,8 +1,8 @@
-from plist_service import PlistService
 import os
+import sys
 from pprint import pprint
 from progressbar import ProgressBar
-import sys
+from plist_service import PlistService
 
 class ASRClient(object):
     def __init__(self, payloadFile):

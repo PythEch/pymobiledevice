@@ -1,6 +1,6 @@
-from lockdown import LockdownClient
-from pprint import pprint
 import plistlib
+from pprint import pprint
+from lockdown import LockdownClient
 
 """
 com.apple.mobile.diagnostics_relay

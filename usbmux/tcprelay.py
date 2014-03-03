@@ -18,12 +18,12 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-import usbmux
-import SocketServer
-import select
-from optparse import OptionParser
 import sys
 import threading
+import SocketServer
+import select
+import usbmux
+from optparse import OptionParser
 
 class SocketRelay(object):
     def __init__(self, a, b, maxbuf=65535):

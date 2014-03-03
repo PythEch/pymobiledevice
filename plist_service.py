@@ -1,10 +1,10 @@
+import socket
+import struct
+import plistlib
+from re import sub
+from pprint import pprint
 from usbmux import usbmux
 from util.bplist import BPlistReader
-import plistlib
-import struct
-from pprint import pprint
-from re import sub
-import socket
 from org.apache.commons.ssl import SSLClient, KeyMaterial, TrustMaterial
 
 class PlistService(object):

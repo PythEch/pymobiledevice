@@ -1,11 +1,10 @@
-from lockdown import LockdownClient
+import re
+from sys import exit
 from datetime import datetime
+from optparse import OptionParser
 from util import getHomePath
 from util import hexdump
-from sys import exit
-from optparse import OptionParser
-
-import re
+from lockdown import LockdownClient
 
 class Syslog(object):
     def __init__(self, lockdown=None):

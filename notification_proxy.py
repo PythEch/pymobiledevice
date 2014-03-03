@@ -1,7 +1,6 @@
-from lockdown import LockdownClient
-from pprint import pprint
 import plistlib
-
+from pprint import pprint
+from lockdown import LockdownClient
 
 class NPClient(object):
     def __init__(self, lockdown=None, serviceName="com.apple.mobile.notification_proxy"):

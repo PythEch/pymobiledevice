@@ -1,14 +1,14 @@
+import os
+import datetime
+import struct
+import plistlib
 from construct.core import Struct
 from construct.lib.container import Container
 from construct.macros import String, ULInt64
-from lockdown import LockdownClient
-import struct
-import plistlib
 from pprint import pprint
-import os
-import datetime
-from afc import AFCClient
 from util import makedirs
+from afc import AFCClient
+from lockdown import LockdownClient
 
 #
 # Fix plistlib.py line 364
