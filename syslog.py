@@ -2,8 +2,7 @@ import re
 from sys import exit
 from datetime import datetime
 from optparse import OptionParser
-from util import getHomePath
-from util import hexdump
+from util import getHomePath, hexdump
 from lockdown import LockdownClient
 
 class Syslog(object):
