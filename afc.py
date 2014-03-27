@@ -1,11 +1,9 @@
 import os
-import time
 import struct
 import plistlib
 from construct.core import Struct
 from construct.lib.container import Container
 from construct.macros import String, ULInt64
-from pprint import pprint
 from cmd import Cmd
 from util import hexdump, parsePlist
 from lockdown import LockdownClient
@@ -169,8 +167,8 @@ class AFCClient(object):
             return self.receive_data()
         except:
             self.lockdown = LockdownClient()
-            self.service = lockdown.startService(serviceName)
-            return  self.do_operation(opcode, data)
+            self.service = lockdown.startService(serviceName)  # ???
+            return self.do_operation(opcode, data)
 
     def list_to_dict(self, d):
         t = d.split("\x00")
@@ -390,7 +388,7 @@ class AFCShell(Cmd):
             return data
 
     def do_rm(self, p):
-        d = self.afc.file_remove(self.curdir + "/" + p)
+        print "rm: %s" % self.afc.file_remove(self.curdir + "/" + p)
 
     def do_pull(self, p):
         t = p.split()
