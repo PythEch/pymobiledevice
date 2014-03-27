@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#       usbmux.py - usbmux client library for Python
+#       usbmux.py - usbmux client library for Jython
 #
+# Copyright (C) 2014    Taconut <https://github.com/Triforce1>
+# Copyright (C) 2014    PythEch <https://github.com/PythEch>
 # Copyright (C) 2009    Hector Martin "marcan" <hector@marcansoft.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,6 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
 import jarray
 import os
 import socket

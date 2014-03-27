@@ -1,12 +1,29 @@
+#
+# pymobiledevice - Jython implementation of libimobiledevice
+#
+# Copyright (C) 2014  Taconut <https://github.com/Triforce1>
+# Copyright (C) 2014  PythEch <https://github.com/PythEch>
+# Copyright (C) 2013  GotoHack <https://github.com/GotoHack>
+#
+# pymobiledevice is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# pymobiledevice is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with pymobiledevice.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import hashlib
 import datetime
 from struct import unpack, pack
-from time import mktime, gmtime, sleep, time
 from optparse import OptionParser
 from pprint import pprint
-from biplist import writePlist, readPlist, Data
-from util import write_file, hexdump
 from mobilebackup import MobileBackupClient
 from lockdown import LockdownClient
 
