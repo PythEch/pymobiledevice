@@ -12,20 +12,22 @@ except ImportError:
     else:
         raise RuntimeError("Only Jython is supported")
 
-# Jython doesn't have an OS constant
-os_name = System.getProperty('os.name').encode('ascii', 'ignore').lower()
-
-if 'os x' in os_name or 'linux' in os_name:
-    raise NotImplementedError("Your OS is not supported yet: " + os_name)
-elif 'windows' not in os_name:
-    raise RuntimeError("Unsupported OS: " + os_name)
-
 # Disable SSL/TLS socket randomization that iOS doesn't like
 System.setProperty('jsse.enableCBCProtection', 'false')
 
 # Working directory, a missing variable in Python
 # Should work in all cases
 wd = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
+# Jython doesn't have an OS constant
+os_name = System.getProperty('os.name').encode('ascii', 'ignore').lower()
+
+if 'windows' in os_name:
+    pass
+elif 'os x' in os_name or 'linux' in os_name:
+    System.setProperty('org.newsclub.net.unix.library.path', os.path.join(wd, 'native'))
+else:
+    raise RuntimeError("Unsupported OS: " + os_name)
 
 # Makes importing 3rd party libraries easier
 site.addsitedir(wd)

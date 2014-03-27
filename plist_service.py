@@ -1,11 +1,13 @@
-import socket
-import struct
+import sys
+import time
+
+import os
 import plistlib
+import struct
 from re import sub
-from pprint import pprint
 from usbmux import usbmux
 from util.bplist import BPlistReader
-from org.apache.commons.ssl import SSLClient, KeyMaterial, TrustMaterial
+
 
 class PlistService(object):
     def __init__(self, port, udid=None):
@@ -14,12 +16,16 @@ class PlistService(object):
 
     def connect(self, udid=None):
         mux = usbmux.USBMux()
-        mux.process(1.0)
+        mux.process(5.0)
         dev = None
-        #if not mux.devices:
-        #print "Waiting for iOS device %s" % str(udid)
-        while not dev and mux.devices :
-            mux.process(1.0)
+        try:
+            while not mux.devices:
+                print "Waiting for iOS device: %s" % udid
+                time.sleep(5)
+        except KeyboardInterrupt:
+            sys.exit(0)
+        while not dev and mux.devices:
+            #mux.process(1.0)
             if udid:
                 for d in mux.devices:
                     if d.serial == udid:
@@ -30,11 +36,11 @@ class PlistService(object):
                 print "Connecting to device: " + dev.serial
 
         #
-        self.udid = dev.serial ###
+        #self.udid = dev.serial ###
         try:
             self.s = mux.connect(dev, self.port)
         except:
-            raise Exception("Connexion to device port %d failed" % self.port)
+            raise Exception("Connection to device port %d failed" % self.port)
         return dev.serial
 
     def close(self):
@@ -75,7 +81,7 @@ class PlistService(object):
             return BPlistReader(payload).parse()
         elif payload.startswith("<?xml"):
             #HAX lockdown HardwarePlatform with null bytes
-            payload = sub('[^\w<>\/ \-_0-9\"\'\\=\.\?\!\+]+','', payload.decode('utf-8')).encode('utf-8')
+            payload = sub('[^\w<>\/ \-_0-9\"\'\\=\.\?\!\+]+', '', payload.decode('utf-8')).encode('utf-8')
             return plistlib.readPlistFromString(payload)
         else:
             raise Exception("recvPlist invalid data : %s" % payload[:100].encode("hex"))
@@ -86,26 +92,8 @@ class PlistService(object):
         l = struct.pack(">L", len(payload))
         self.send(l + payload)
 
-    def ssl_start(self, keyfile, certfile):
-        # = Monkey-Patch! = #
-        socket.ssl._make_ssl_socket = self._nycs_socket
-        self.keyfile = keyfile # no parameter is used in original socket.py
-        #certfile isn't necessary because of TRUST_ALL
-        self.s = socket.ssl(self.s)
-        #It'd be good if this was default behaviour
-        self.s.send = self.s.write
-        self.s.recv = self.s.read
-
-    def _nycs_socket(self, jython_socket):
-        java_net_socket = jython_socket._get_jsocket()
-        host = java_net_socket.getInetAddress().getHostAddress()
-        port = java_net_socket.getPort()
-        client = SSLClient()
-        client.setCheckHostname(False)
-        client.setCheckExpiry(False)
-        client.setCheckCRL(False)
-        client.setKeyMaterial(KeyMaterial(self.keyfile, ""))
-        client.setTrustMaterial(TrustMaterial.TRUST_ALL)
-        s = client.createSocket(java_net_socket, host, port, 0)
-        s.startHandshake()
-        return s
+    def ssl_start(self, keyfile):
+        if os._name == 'nt':
+            self.s = usbmux.SSLSocket(self.s.sock._sock._get_jsocket(), keyfile)
+        else:
+            self.s = usbmux.SSLSocket(self.s.sock, keyfile)
