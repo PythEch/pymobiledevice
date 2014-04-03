@@ -429,24 +429,6 @@ class AFCClient(object):
                               hh + data[segments*MAXIMUM_WRITE_SIZE:],
                               this_length=48)
 
-    def get_file_contents(self, filename):
-        info = self.get_file_info(filename)
-        if info['st_ifmt'] == 'S_IFLNK':
-            filename = info['LinkTarget']
-        if info['st_ifmt'] == 'S_IFDIR':
-            print "%s is directory..." % filename
-            return
-        print "Reading %s" % filename
-        h = self.file_open(filename)
-        d = self.file_read(h, int(info["st_size"]))
-        self.file_close(h)
-        return d
-
-    def set_file_contents(self, filename, data):
-        h = self.file_open(filename, AFC_FOPEN_WR)
-        self.file_write(h, data)
-        self.file_close(h)
-
     def dir_walk(self, dir, file_list=[]):
         d = os.path.abspath(dir)
         file_list = []
