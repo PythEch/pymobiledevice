@@ -147,7 +147,6 @@ class LockdownClient(object):
         Pair = {"Request": "Pair", "PairRecord": pair_record}
         self.c.sendPlist(Pair)
         Pair = self.c.recvPlist()
-        print Pair
         if self.is_iOS7 and Pair.get("Error") == "PasswordProtected":
             print "\n\nPlease tap 'Trust This Computer' on your iDevice...\n"
             time.sleep(5)
@@ -187,8 +186,7 @@ class LockdownClient(object):
             print StartService["Error"], name
             return
         #print StartService
-        zz = PlistService(StartService["Port"])
-        return zz
+        return PlistService(StartService["Port"])
 
 if __name__ == "__main__":
     l = LockdownClient()

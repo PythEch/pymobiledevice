@@ -18,11 +18,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with pymobiledevice.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import sys
+import os
 from pprint import pprint
 from progressbar import ProgressBar
 from plist_service import PlistService
+
 
 class ASRClient(object):
     def __init__(self, payloadFile):

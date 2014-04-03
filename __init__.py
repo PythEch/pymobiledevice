@@ -18,10 +18,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with pymobiledevice.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import sys
-import site
 import inspect
+import os
 
 try:
     from java.lang import System
@@ -37,21 +36,20 @@ wd = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 lib_dir = os.path.join(wd, 'libs')
 
 # Makes importing 3rd party libraries easier
-site.addsitedir(os.path.join(lib_dir, 'python'))
+sys.path.append(os.path.join(lib_dir, 'python'))
 
 # Jython doesn't have an OS constant
-os_name = System.getProperty('os.name').encode('ascii', 'ignore').lower()
+os_name = System.getProperty('os.name').encode('ascii', 'ignore')
 
-if 'windows' in os_name:
-    pass
-elif 'os x' in os_name or 'linux' in os_name:
-    System.setProperty('org.newsclub.net.unix.library.path', os.path.join(lib_dir, 'native'))
-else:
+if not os_name.lower().startswith(('windows', 'mac os x', 'linux')):
     raise RuntimeError("Unsupported OS: " + os_name)
 
-jar_dir = os.path.join(lib_dir, 'java')
-if len([s for s in sys.path if jar_dir in s]) == 0:
+if System.getProperty('org.newsclub.net.unix.library.path') is None:
+    # Junixsocket native dependencies
+    System.setProperty('org.newsclub.net.unix.library.path', os.path.join(lib_dir, 'native'))
+    jar_dir = os.path.join(lib_dir, 'java')
     for jar in os.listdir(jar_dir):
-        sys.path.append(os.path.join(jar_dir, jar))
+        if not (os._name == 'nt' and jar.startswith('junixsocket')):  # Don't load junixsocket in Windows
+            sys.path.append(os.path.join(jar_dir, jar))
 #else:
     #Jython is embedded in Java. Let Java take care of the jar dependencies.

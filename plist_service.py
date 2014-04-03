@@ -17,7 +17,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with pymobiledevice.  If not, see <http://www.gnu.org/licenses/>.
-
 import sys
 import time
 
@@ -38,14 +37,8 @@ class PlistService(object):
         mux = usbmux.USBMux()
         mux.process(5.0)
         dev = None
-        try:
-            while not mux.devices:
-                print "Waiting for iOS device: %s" % udid
-                time.sleep(5)
-        except KeyboardInterrupt:
-            sys.exit(0)
+
         while not dev and mux.devices:
-            #mux.process(1.0)
             if udid:
                 for d in mux.devices:
                     if d.serial == udid:
