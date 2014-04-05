@@ -21,6 +21,7 @@
 import os
 import plistlib
 import struct
+import posixpath
 from cmd import Cmd
 from construct.core import Struct
 from construct.lib.container import Container
@@ -153,23 +154,11 @@ class AFCError(IOError):
     }
 
     def __init__(self, status):
-        self.status = status
-        super(AFCError, self).__init__(status, self.lookup_table.get(status))
-
-
-def check_if_closed(func):
-    def wrapper(self, *args, **kwargs):
-        if self.closed:
-            raise ValueError("I/O operation on closed file")
-        return func(self, *args, **kwargs)
-    return wrapper
+        super(AFCError, self).__init__(status, self.lookup_table.get(status, "Unknown error"))
 
 
 class AFCFile(object):
-    def __init__(self, name, mode='r', lockdown=None, serviceName="com.apple.afc", service=None):
-        # File modes
-        # Only binary modes are supported
-        # In other words, no automatic newline conversion
+    def __init__(self, name, mode='r', afc=None):
         flags = {'r': AFC_FOPEN_RDONLY,
                  'r+': AFC_FOPEN_RW,
                  'w': AFC_FOPEN_WRONLY,
@@ -177,48 +166,64 @@ class AFCFile(object):
                  'a': AFC_FOPEN_APPEND,
                  'a+': AFC_FOPEN_RDAPPEND}
 
-        if mode not in flags:
+        if 'b' in mode or os._name != 'nt':
+            # No support for Mac OS 9. Only NT <-> POSIX conversion (\r\n <-> \n)
+            self._binary = True
+        else:
+            self._binary = False
+
+        if afc:
+            self._afc = afc
+        else:
+            self._afc = AFCClient()
+
+        try:
+            self._handle = self._afc.file_open(name, flags[mode.replace('b', '', 1)])
+        except KeyError:
             raise ValueError("Invalid mode ('%s')" % mode)
 
-        self._afc = AFCClient(lockdown, serviceName, service)
         self._info = self._afc.get_file_info(name)
-
-        # Do not allow directories
-        if self._info['st_ifmt'] == 'S_IFDIR':
-            raise AFCError(AFC_E_OBJECT_IS_DIR)
 
         if self._info['st_ifmt'] == 'S_IFLNK':
             name = self._info['LinkTarget']
-
-        self._handle = self._afc.file_open(name, flags[mode])
 
         self.name = name
         self.mode = mode
         self.closed = False
 
-    @check_if_closed
     def read(self, size=None):
-        # Can't do "EAFP" here! Sorry
-        if self.mode in ('w', 'a'):
-            raise IOError("File not open for reading")
+        try:
+            if self.mode in ('w', 'a'):
+                raise IOError("File not open for reading")
 
-        if not isinstance(size, int):
+            if size is None:
+                size = int(self._info['st_size'])
+
+            r = self._afc.file_read(self._handle, size)
+            if self._binary:
+                return r
+            return r.replace('\n', '\r\n')
+        except TypeError:
             raise TypeError("an integer is required")
+        except AFCError:
+            if self.closed:
+                raise IOError("I/O operation on closed file")
+            raise
 
-        if size is None:
-            size = int(self._info['st_size'])
-
-        return self._afc.file_read(self._handle, size)
-
-    @check_if_closed
     def write(self, string):
-        if self.mode == 'r':
-            raise IOError("File not open for writing")
+        try:
+            if self.mode == 'r':
+                raise IOError("File not open for writing")
 
-        if not isinstance(string, basestring):
+            if not self._binary:
+                string = string.replace('\r\n', '\n')
+            self._afc.file_write(self._handle, string)
+        except TypeError:
             raise TypeError("expected a character buffer object")
-
-        self._afc.file_write(self._handle, string)
+        except AFCError:
+            if self.closed:
+                raise IOError("I/O operation on closed file")
+            raise
 
     def readlines(self, size=None):
         return self.read(size).splitlines(True)
@@ -234,17 +239,29 @@ class AFCFile(object):
         self._afc.file_close(self._handle)
         self.closed = True
 
-    @check_if_closed
     def seek(self, offset, whence=os.SEEK_SET):
-        self._afc.file_seek(self._handle, offset, whence)
+        try:
+            self._afc.file_seek(self._handle, offset, whence)
+        except AFCError:
+            if self.closed:
+                raise IOError("I/O operation on closed file")
+            raise
 
-    @check_if_closed
     def tell(self):
-        return self._afc.file_tell(self._handle)
+        try:
+            return self._afc.file_tell(self._handle)
+        except AFCError:
+            if self.closed:
+                raise IOError("I/O operation on closed file")
+            raise
 
-    @check_if_closed
     def truncate(self, size=None):
-        self._afc.file_truncate(self._handle, size)
+        try:
+            self._afc.file_truncate(self._handle, size)
+        except AFCError:
+            if self.closed:
+                raise IOError("I/O operation on closed file")
+            raise
 
     def __enter__(self):
         return self
@@ -252,6 +269,9 @@ class AFCFile(object):
     def __exit__(self, exception_type, exception_value, traceback):
         #if exception_type:
         #    return  # FIXME: do something
+        self.close()
+
+    def __del__(self):
         self.close()
 
     # Not sure if this is the most elegant solution
@@ -270,10 +290,9 @@ class AFCFile(object):
                 break
 
             lines = r.splitlines(True)
-            r = ""  # Not sure if Garbage Collection is smart enough to do this
-            # Probably a premature optimization
+            r = ""
             for line in lines:
-                if '\n' in line:
+                if line[-1] == '\n':
                     yield line
                 else:
                     r = line  # Continue reading
@@ -299,7 +318,10 @@ class AFCClient(object):
         print "Disconecting..."
         self.service.close()
 
-    def dispatch_packet(self, operation, data="", this_length=0):
+    def __del__(self):
+        self.stop_session()
+
+    def dispatch_packet(self, operation, data, this_length=0):
         afcpack = Container(magic=AFCMAGIC,
                             entire_length=40 + len(data),
                             this_length=40 + len(data),
@@ -322,10 +344,10 @@ class AFCClient(object):
             data = self.service.recv_exact(length)
             if res.operation == AFC_OP_STATUS:
                 assert length == 8
-                status = struct.unpack("<Q", data[:8])[0]
+                status = int(struct.unpack("<Q", data[:8])[0])
 
                 if status != AFC_E_SUCCESS:
-                    raise AFCError(status)  # Raise error when things go wrong
+                    raise AFCError(status)
 
             elif res.operation != AFC_OP_DATA:
                 pass  # print "error ?", res
@@ -336,68 +358,37 @@ class AFCClient(object):
         return self.receive_data()
 
     def list_to_dict(self, d):
-        t = d.rstrip("\x00").split("\x00")
-        it = iter(t)
+        it = iter(d.rstrip("\x00").split("\x00"))
         return dict(zip(it, it))
 
     def get_device_infos(self):
         infos = self.do_operation(AFC_OP_GET_DEVINFO)
         return self.list_to_dict(infos)
 
-    def read_directory(self, dirname):
-        data = self.do_operation(AFC_OP_READ_DIR, dirname)
-        return data.rstrip("\x00").split("\x00")
-
-    def make_directory(self, dirname):
-        self.do_operation(AFC_OP_MAKE_DIR, dirname)
-
-    def remove_directory(self, dirname):
-        info = self.get_file_info(dirname)
-        if not info or info.get("st_ifmt") != "S_IFDIR":
-            #print "remove_directory: %s not S_IFDIR" % dirname
-            return
-        for d in self.read_directory(dirname):
-            if d in (".", "..", ""):
-                continue
-            info = self.get_file_info(dirname + "/" + d)
-            if info.get("st_ifmt") == "S_IFDIR":
-                self.remove_directory(dirname + "/" + d)
-            else:
-                print dirname + "/" + d
-                self.file_remove(dirname + "/" + d)
-        assert len(self.read_directory(dirname)) == 2  # "." and ".."
-        self.file_remove(dirname)
-
     def get_file_info(self, filename):
         data = self.do_operation(AFC_OP_GET_FILE_INFO, filename)
         return self.list_to_dict(data)
 
-    def make_link(self, target, linkname, type=AFC_SYMLINK):
-        self.do_operation(AFC_OP_MAKE_LINK, struct.pack("<Q", type) + target + "\x00" + linkname + "\x00")
-
     def file_open(self, filename, mode=AFC_FOPEN_RDONLY):
+        #if filename.startswith('/var/Mobile/Media') and self.serviceName == 'com.apple.afc':
+        #    filename = filename.replace('/var/Mobile/Media', '')
+
         data = self.do_operation(AFC_OP_FILE_OPEN, struct.pack("<Q", mode) + filename + "\x00")
         return struct.unpack("<Q", data)[0]
 
     def file_close(self, handle):
         self.do_operation(AFC_OP_FILE_CLOSE, struct.pack("<Q", handle))
 
-    def file_remove(self, filename):
-        self.do_operation(AFC_OP_REMOVE_PATH, filename + "\x00")
-
-    def file_rename(self, old, new):
-        self.do_operation(AFC_OP_RENAME_PATH, old + "\x00" + new + "\x00")
-
     def file_seek(self, handle, offset, whence=os.SEEK_SET):
         self.do_operation(AFC_OP_FILE_SEEK, struct.pack("<QQq", handle, whence, offset))
 
     def file_tell(self, handle):
-        data = self._afc.do_operation(AFC_OP_FILE_TELL, struct.pack("<Q", handle))
+        data = self.do_operation(AFC_OP_FILE_TELL, struct.pack("<Q", handle))
         return struct.unpack("<Q", data)[0]
 
     def file_truncate(self, handle, size=None):
         if size is None:
-            size = self.file_tell()
+            size = self.file_tell(handle)
 
         self.do_operation(AFC_OP_FILE_SET_SIZE, struct.pack("<QQ", handle, size))
 
@@ -429,18 +420,53 @@ class AFCClient(object):
                               hh + data[segments*MAXIMUM_WRITE_SIZE:],
                               this_length=48)
 
-    def dir_walk(self, dir, file_list=[]):
-        d = os.path.abspath(dir)
-        file_list = []
-        for file in self.read_directory(d)[2:]:
-            path = os.path.join(d, file)
-            info = self.get_file_info(path)
-            if info:
-                if info['st_ifmt'] == 'S_IFDIR':
-                    file_list += self.dir_walk(path, file_list)
-                info['path'] = path
-                file_list.append(info)
-        return file_list
+    def make_link(self, target, linkname, link_type=AFC_SYMLINK):
+        self.do_operation(AFC_OP_MAKE_LINK, struct.pack("<Q", link_type) + target + "\x00" + linkname + "\x00")
+
+    def remove_path(self, path):
+        self.do_operation(AFC_OP_REMOVE_PATH, path + "\x00")
+
+    def rename_path(self, old, new):
+        self.do_operation(AFC_OP_RENAME_PATH, old + "\x00" + new + "\x00")
+
+    def read_directory(self, dirname):
+        data = self.do_operation(AFC_OP_READ_DIR, dirname)
+        return data.rstrip("\x00").split("\x00")
+
+    def make_directory(self, dirname):
+        self.do_operation(AFC_OP_MAKE_DIR, dirname)
+
+    def dir_walk(self, dirname):
+        # root = dirname
+        dirs = []
+        files = []
+        for fd in self.read_directory(dirname):
+            if fd in ('.', '..', ''):  # is it ever be '' ?
+                continue
+            if self.get_file_info(posixpath.join(dirname, fd)).get('st_ifmt') == 'S_IFDIR':
+                dirs.append(fd)
+            else:
+                files.append(fd)
+
+        yield dirname, dirs, files
+
+        # if dirs != [], continue iterating using recursion
+        if dirs:
+            for d in dirs:
+                for walk_result in self.dir_walk(posixpath.join(dirname, d)):
+                    yield walk_result
+
+    def remove_directory(self, dirname):
+        for d in self.read_directory(dirname):
+            if d in ('.', '..', ''):
+                continue
+            path = posixpath.join(dirname, d)
+            if self.get_file_info(path).get("st_ifmt") == "S_IFDIR":
+                self.remove_directory(path)
+            else:
+                self.remove_path(path)
+        assert len(self.read_directory(dirname)) == 2  # "." and ".."
+        self.remove_path(dirname)
 
 
 # Is this really useful?
@@ -449,6 +475,10 @@ class AFC2Client(AFCClient):
     def __init__(self, lockdown=None, serviceName="com.apple.afc2", service=None):
         super(AFC2Client, self).__init__(lockdown, serviceName, service)
 
+
+# AFCShell is doomed because of try-catch approach
+# This makes coding AFCClient easier and AFCShell harder.
+# I'm thinking about a solution
 
 class AFCShell(Cmd):
     def __init__(self, completekey='tab', stdin=None, stdout=None, afc=None):
@@ -513,7 +543,7 @@ class AFCShell(Cmd):
             return data
 
     def do_rm(self, p):
-        print "rm: %s" % self.afc.file_remove(self.curdir + "/" + p)
+        self.afc.remove_path(self.curdir + "/" + p)
 
     def do_pull(self, p):
         t = p.split()
@@ -559,7 +589,7 @@ class AFCShell(Cmd):
 
     def do_mv(self, p):
         t = p.split()
-        return self.afc.file_rename(t[0], t[1])
+        return self.afc.rename_path(t[0], t[1])
 
     def do_about(self, p):
         return self.afc.get_file_info(p)
