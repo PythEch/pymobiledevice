@@ -158,7 +158,7 @@ class AFCError(IOError):
 
 
 class AFCFile(object):
-    def __init__(self, name, mode='r', afc=None):
+    def __init__(self, name, mode='r+', afc=None):
         flags = {'r': AFC_FOPEN_RDONLY,
                  'r+': AFC_FOPEN_RW,
                  'w': AFC_FOPEN_WRONLY,
@@ -230,8 +230,11 @@ class AFCFile(object):
 
     def writelines(self, sequence_of_strings):
         try:
+            lines = "";
             for string in sequence_of_strings:
-                self.write(string)
+                lines += '\n'
+                lines += string
+            self.write(lines.substr(1));
         except TypeError:
             raise TypeError("writelines() requires an iterable argument")
 
@@ -257,7 +260,7 @@ class AFCFile(object):
 
     def truncate(self, size=None):
         try:
-            self._afc.file_truncate(self._handle, size)
+             self._afc.file_truncate(self._handle, size)
         except AFCError:
             if self.closed:
                 raise IOError("I/O operation on closed file")
