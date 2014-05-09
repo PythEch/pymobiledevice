@@ -32,13 +32,6 @@ from plist_service import PlistService
 #we store pairing records and ssl keys in ~/.pymobiledevice
 HOMEFOLDER = '.pymobiledevice'
 
-def list_devices():
-    devices = [] 
-    mux = usbmux.USBMux()
-    mux.process(1)
-    for d in mux.devices:
-        devices.append(d.serial)
-    return devices
 
 class LockdownClient(object):
     def __init__(self, udid=None):

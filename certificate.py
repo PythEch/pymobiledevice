@@ -34,8 +34,7 @@ Security.addProvider(BouncyCastleProvider())
 
 def convertPKCS1toPKCS8pubKey(data):
     subjectpublickeyrsa_start = "30 81 9E 30 0D 06 09 2A 86 48 86 F7 0D 01 01 01 05 00 03 81 8C 00".replace(" ", "").decode("hex")
-    data = data.replace("-----BEGIN RSA PUBLIC KEY-----", "").replace("-----END RSA PUBLIC KEY-----", "")
-    data = data.decode('base64')
+    data = data.replace("-----BEGIN RSA PUBLIC KEY-----", "").replace("-----END RSA PUBLIC KEY-----", "").decode('base64')
     if data.startswith("30 81 89 02 81 81 00".replace(" ", "").decode("hex")):
         #HAX remove null byte to make 128 bytes modulus
         data = "30 81 88 02 81 80".replace(" ", "").decode("hex") + data[7:]

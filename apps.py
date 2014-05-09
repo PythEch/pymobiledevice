@@ -97,7 +97,7 @@ def list_apps(lockdown):
             print app["CFBundleIdentifier"], "=>", app.get("CFBundleDisplayName")
 
 def app_info(lockdown):
-    mci = lockdown.startService("com.apple.mobile.installation_proxy") 
+    mci = lockdown.startService("com.apple.mobile.installation_proxy")
     mci.sendPlist({"Command":"Lookup"})
     res = mci.recvPlist()
     return res["LookupResult"].values()

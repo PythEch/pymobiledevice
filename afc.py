@@ -167,7 +167,6 @@ class AFCFile(object):
                  'a+': AFC_FOPEN_RDAPPEND}
 
         if 'b' in mode or os._name != 'nt':
-            # No support for Mac OS 9. Only NT <-> POSIX conversion (\r\n <-> \n)
             self._binary = True
         else:
             self._binary = False
@@ -202,7 +201,7 @@ class AFCFile(object):
             r = self._afc.file_read(self._handle, size)
             if self._binary:
                 return r
-            return r.replace('\n', '\r\n')
+            return r.replace('\r', '\n').replace('\n', '\r\n')
         except TypeError:
             raise TypeError("an integer is required")
         except AFCError:
@@ -216,7 +215,7 @@ class AFCFile(object):
                 raise IOError("File not open for writing")
 
             if not self._binary:
-                string = string.replace('\r\n', '\n')
+                string = string.replace('\r\n', '\n').replace('\r', '\n')
             self._afc.file_write(self._handle, string)
         except TypeError:
             raise TypeError("expected a character buffer object")
@@ -230,11 +229,8 @@ class AFCFile(object):
 
     def writelines(self, sequence_of_strings):
         try:
-            lines = "";
             for string in sequence_of_strings:
-                lines += '\n'
-                lines += string
-            self.write(lines.substr(1));
+                self.write(string + "\n")
         except TypeError:
             raise TypeError("writelines() requires an iterable argument")
 
@@ -260,7 +256,7 @@ class AFCFile(object):
 
     def truncate(self, size=None):
         try:
-             self._afc.file_truncate(self._handle, size)
+            self._afc.file_truncate(self._handle, size)
         except AFCError:
             if self.closed:
                 raise IOError("I/O operation on closed file")
