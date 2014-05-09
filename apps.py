@@ -19,122 +19,88 @@
 # along with pymobiledevice.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from optparse import OptionParser
-from afc import AFCClient, AFCShell
+
+from afc import AFCClient, AFCShell, AFCFile
 from lockdown import LockdownClient
 
 
-def house_arrest(lockdown, applicationId):
-    try:
-        mis = lockdown.startService("com.apple.mobile.house_arrest")
-    except:
-        lockdown = LockdownClient()
-        mis = lockdown.startService("com.apple.mobile.house_arrest")
-
-    if not mis:
-        return
-    mis.sendPlist({"Command": "VendDocuments", "Identifier": applicationId})
-    res = mis.recvPlist()
-    #pprint(res)
-    error = res.get("Error")
-    if error:
-        print res["Error"]
-        return
-    return AFCClient(lockdown, service=mis)
-
-
-def house_arrest_shell(lockdown, applicationId):
-    afc = house_arrest(lockdown, applicationId)
-    AFCShell(afc=afc).cmdloop()
-    #print afc.read_directory("/")
-
-
-"""
-"Install"
-"Upgrade"
-"Uninstall"
-"Lookup"
-"Browse"
-"Archive"
-"Restore"
-"RemoveArchive"
-"LookupArchives"
-"CheckCapabilitiesMatch"
-
-installd
-if stat("/var/mobile/tdmtanf") => "TDMTANF Bypass" => SignerIdentity bypass
-"""
-
-
-def mobile_install(lockdown, ipaPath):
-    #Start afc service & upload ipa
-    afc = AFCClient(lockdown)
-    afc.set_file_contents("/" + os.path.basename(ipaPath), open(ipaPath, 'rb').read())
-    mci = lockdown.startService("com.apple.mobile.installation_proxy")
-    #print mci.sendPlist({"Command":"Archive","ApplicationIdentifier": "com.joystickgenerals.STActionPig"})
-    mci.sendPlist({"Command": "Install", "PackagePath": os.path.basename(ipaPath)})
-    while True:
-        z = mci.recvPlist()
-        if not z:
-            break
-        completion = z.get('PercentComplete')
-        if completion:
-            print 'Installing, %s: %s %% Complete' % (ipaPath, z['PercentComplete'])
-        if z.get('Status') == 'Complete':
-            print "Installation %s\n" % z['Status']
-            break
-
-
-def list_apps(lockdown):
-    mci = lockdown.startService("com.apple.mobile.installation_proxy")
-    #print
-    mci.sendPlist({"Command": "Lookup"})
-    res = mci.recvPlist()
-    for app in res["LookupResult"].values():
-        if app.get("ApplicationType") != "System":
-            print app["CFBundleIdentifier"], "=>", app.get("Container")
+class InstallationProxy(object):
+    def __init__(self, lockdown=None):
+        if lockdown is None:
+            self.lockdown = LockdownClient()
         else:
-            print app["CFBundleIdentifier"], "=>", app.get("CFBundleDisplayName")
+            self.lockdown = lockdown
 
-def app_info(lockdown):
-    mci = lockdown.startService("com.apple.mobile.installation_proxy")
-    mci.sendPlist({"Command":"Lookup"})
-    res = mci.recvPlist()
-    return res["LookupResult"].values()
+        self.service = self.lockdown.startService('com.apple.mobile.installation_proxy')
 
-def get_apps_BundleID(lockdown, appType="User"):
-    appList = []
-    mci = lockdown.startService("com.apple.mobile.installation_proxy")
-    mci.sendPlist({"Command": "Lookup"})
-    res = mci.recvPlist()
-    for app in res["LookupResult"].values():
-        if app.get("ApplicationType") == appType:
-            appList.append(app["CFBundleIdentifier"])
-        #else: #FIXME
-        #    appList.append(app["CFBundleIdentifier"])
-    mci.close()
-    #pprint(appList)
-    return appList
+    def install_ipa(self, ipaPath):
+        #Start afc service & upload ipa
+        filename = os.path.basename(ipaPath)
+        with AFCFile(name='/'+filename, mode='wb', afc=AFCClient(self.lockdown)) as f:
+            f.write(open(ipaPath, 'rb').read())
+
+        self.service.sendPlist({
+            'Command': 'Install',
+            'PackagePath': filename
+            })
+
+        while True:
+            response = self.service.recvPlist()
+            if not response:
+                break
+
+            completion = response.get('PercentComplete')
+            if completion:
+                print 'Installing, %s: %s %% Complete' % (ipaPath, completion)
+            status = response.get('Status')
+            if status == 'Complete':
+                print 'Installation %s' % status
+                break
+
+    def app_info(self):
+        self.service.sendPlist({
+            'Command': 'Lookup'
+            })
+        return self.service.recvPlist()['LookupResult'].values()
+
+    def list_apps(self):
+        for app in self.app_info():
+            if app.get('ApplicationType') != 'System':
+                print app['CFBundleIdentifier'], '=>', app.get('Container')
+            else:
+                print app['CFBundleIdentifier'], '=>', app.get('CFBundleDisplayName')
+
+    def get_apps_BundleID(self, appType='User'):
+        appList = []
+        for app in self.app_info():
+            if app.get('ApplicationType') == appType:
+                appList.append(app['CFBundleIdentifier'])
+            #else: #FIXME
+            #    appList.append(app['CFBundleIdentifier'])
+        return appList
+
+    def close(self):
+        self.service.close()
+
+    def __del__(self):
+        self.close()
 
 
-if __name__ == "__main__":
-    parser = OptionParser(usage="%prog")
-    parser.add_option("-l", "--list", dest="list", action="store_true", default=False,
-                      help="List installed applications (non system apps)")
-    parser.add_option("-a", "--app", dest="app", action="store", default=None,
-                      metavar="FILE", help="Access application files with AFC")
-    parser.add_option("-i", "--install", dest="installapp", action="store", default=None,
-                      metavar="FILE", help="Install an application package")
+class AFCApplication(AFCClient):
+    def __init__(self, lockdown, applicationBundleID):
+        super(AFCApplication, self).__init__(lockdown, 'com.apple.mobile.house_arrest')
 
-    (options, args) = parser.parse_args()
-    if options.list:
-        lockdown = LockdownClient()
-        list_apps(lockdown)
-    elif options.app:
-        lockdown = LockdownClient()
-        house_arrest_shell(lockdown, options.app)
-    elif options.installapp:
-        lockdown = LockdownClient()
-        mobile_install(lockdown, options.installapp)
-    else:
-        parser.print_help()
+        self.service.sendPlist({
+            'Command': 'VendDocuments',
+            'Identifier': applicationBundleID
+            })
+
+        response = self.service.recvPlist()
+        error = response.get('Error')
+        if error:
+            print error  # FIXME
+
+    @classmethod
+    def as_shell(cls, lockdown, applicationBundleID):
+        _afc = cls(lockdown, applicationBundleID)
+        AFCShell(afc=_afc).cmdloop()

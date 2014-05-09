@@ -157,150 +157,8 @@ class AFCError(IOError):
         super(AFCError, self).__init__(status, self.lookup_table.get(status, "Unknown error"))
 
 
-class AFCFile(object):
-    def __init__(self, name, mode='r+', afc=None):
-        flags = {'r': AFC_FOPEN_RDONLY,
-                 'r+': AFC_FOPEN_RW,
-                 'w': AFC_FOPEN_WRONLY,
-                 'w+': AFC_FOPEN_WR,
-                 'a': AFC_FOPEN_APPEND,
-                 'a+': AFC_FOPEN_RDAPPEND}
-
-        if 'b' in mode or os._name != 'nt':
-            self._binary = True
-        else:
-            self._binary = False
-
-        if afc:
-            self._afc = afc
-        else:
-            self._afc = AFCClient()
-
-        try:
-            self._handle = self._afc.file_open(name, flags[mode.replace('b', '', 1)])
-        except KeyError:
-            raise ValueError("Invalid mode ('%s')" % mode)
-
-        self._info = self._afc.get_file_info(name)
-
-        if self._info['st_ifmt'] == 'S_IFLNK':
-            name = self._info['LinkTarget']
-
-        self.name = name
-        self.mode = mode
-        self.closed = False
-
-    def read(self, size=None):
-        try:
-            if self.mode in ('w', 'a'):
-                raise IOError("File not open for reading")
-
-            if size is None:
-                size = int(self._info['st_size'])
-
-            r = self._afc.file_read(self._handle, size)
-            if self._binary:
-                return r
-            return r.replace('\r', '\n').replace('\n', '\r\n')
-        except TypeError:
-            raise TypeError("an integer is required")
-        except AFCError:
-            if self.closed:
-                raise IOError("I/O operation on closed file")
-            raise
-
-    def write(self, string):
-        try:
-            if self.mode == 'r':
-                raise IOError("File not open for writing")
-
-            if not self._binary:
-                string = string.replace('\r\n', '\n').replace('\r', '\n')
-            self._afc.file_write(self._handle, string)
-        except TypeError:
-            raise TypeError("expected a character buffer object")
-        except AFCError:
-            if self.closed:
-                raise IOError("I/O operation on closed file")
-            raise
-
-    def readlines(self, size=None):
-        return self.read(size).splitlines(True)
-
-    def writelines(self, sequence_of_strings):
-        try:
-            for string in sequence_of_strings:
-                self.write(string + "\n")
-        except TypeError:
-            raise TypeError("writelines() requires an iterable argument")
-
-    def close(self):
-        self._afc.file_close(self._handle)
-        self.closed = True
-
-    def seek(self, offset, whence=os.SEEK_SET):
-        try:
-            self._afc.file_seek(self._handle, offset, whence)
-        except AFCError:
-            if self.closed:
-                raise IOError("I/O operation on closed file")
-            raise
-
-    def tell(self):
-        try:
-            return self._afc.file_tell(self._handle)
-        except AFCError:
-            if self.closed:
-                raise IOError("I/O operation on closed file")
-            raise
-
-    def truncate(self, size=None):
-        try:
-            self._afc.file_truncate(self._handle, size)
-        except AFCError:
-            if self.closed:
-                raise IOError("I/O operation on closed file")
-            raise
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        #if exception_type:
-        #    return  # FIXME: do something
-        self.close()
-
-    def __del__(self):
-        self.close()
-
-    # Not sure if this is the most elegant solution
-    # Tested and working though
-    def __iter__(self):
-        r = ""
-        buffer_size = 4096  # What's optimal for this?
-        while True:
-            buff = self.read(buffer_size)
-            if buff:
-                r += buff
-            else:
-                # Reached EOF
-                if r:  # yield the last line if it wasn't already
-                    yield r
-                break
-
-            lines = r.splitlines(True)
-            r = ""
-            for line in lines:
-                if line[-1] == '\n':
-                    yield line
-                else:
-                    r = line  # Continue reading
-
-    xreadlines = __iter__
-
-
 class AFCClient(object):
-    def __init__(self, lockdown=None, serviceName="com.apple.afc", service=None):
+    def __init__(self, lockdown=None, serviceName='com.apple.afc', service=None):
         if lockdown:
             self.lockdown = lockdown
         else:
@@ -468,12 +326,158 @@ class AFCClient(object):
         self.remove_path(dirname)
 
 
-# Is this really useful?
+class AFC2Client(AFCClient):  # Is this really useful?
+    def __init__(self, lockdown=None):
+        super(AFC2Client, self).__init__(lockdown, 'com.apple.afc2')
 
-class AFC2Client(AFCClient):
-    def __init__(self, lockdown=None, serviceName="com.apple.afc2", service=None):
-        super(AFC2Client, self).__init__(lockdown, serviceName, service)
 
+class AFCCrashLog(AFCClient):
+    """Provides access to the /var/mobile/Library/Logs/CrashReporter directory"""
+
+    def __init__(self, lockdown=None):
+        super(AFCCrashLog, self).__init__(lockdown, 'com.apple.crashreportcopymobile')
+
+
+class AFCFile(object):
+    def __init__(self, name, mode='r+', afc=None):
+        flags = {'r': AFC_FOPEN_RDONLY,
+                 'r+': AFC_FOPEN_RW,
+                 'w': AFC_FOPEN_WRONLY,
+                 'w+': AFC_FOPEN_WR,
+                 'a': AFC_FOPEN_APPEND,
+                 'a+': AFC_FOPEN_RDAPPEND}
+
+        if 'b' in mode or os._name != 'nt':
+            self._binary = True
+        else:
+            self._binary = False
+
+        if afc:
+            self._afc = afc
+        else:
+            self._afc = AFCClient()
+
+        try:
+            self._handle = self._afc.file_open(name, flags[mode.replace('b', '', 1)])
+        except KeyError:
+            raise ValueError("Invalid mode ('%s')" % mode)
+
+        self._info = self._afc.get_file_info(name)
+
+        if self._info['st_ifmt'] == 'S_IFLNK':
+            name = self._info['LinkTarget']
+
+        self.name = name
+        self.mode = mode
+        self.closed = False
+
+    def read(self, size=None):
+        try:
+            if self.mode in ('w', 'a'):
+                raise IOError("File not open for reading")
+
+            if size is None:
+                size = int(self._info['st_size'])
+
+            r = self._afc.file_read(self._handle, size)
+            if self._binary:
+                return r
+            return r.replace('\r', '\n').replace('\n', '\r\n')
+        except TypeError:
+            raise TypeError("an integer is required")
+        except AFCError:
+            if self.closed:
+                raise IOError("I/O operation on closed file")
+            raise
+
+    def write(self, string):
+        try:
+            if self.mode == 'r':
+                raise IOError("File not open for writing")
+
+            if not self._binary:
+                string = string.replace('\r\n', '\n').replace('\r', '\n')
+            self._afc.file_write(self._handle, string)
+        except TypeError:
+            raise TypeError("expected a character buffer object")
+        except AFCError:
+            if self.closed:
+                raise IOError("I/O operation on closed file")
+            raise
+
+    def readlines(self, size=None):
+        return self.read(size).splitlines(True)
+
+    def writelines(self, sequence_of_strings):
+        try:
+            for string in sequence_of_strings:
+                self.write(string + "\n")
+        except TypeError:
+            raise TypeError("writelines() requires an iterable argument")
+
+    def close(self):
+        self._afc.file_close(self._handle)
+        self.closed = True
+
+    def seek(self, offset, whence=os.SEEK_SET):
+        try:
+            self._afc.file_seek(self._handle, offset, whence)
+        except AFCError:
+            if self.closed:
+                raise IOError("I/O operation on closed file")
+            raise
+
+    def tell(self):
+        try:
+            return self._afc.file_tell(self._handle)
+        except AFCError:
+            if self.closed:
+                raise IOError("I/O operation on closed file")
+            raise
+
+    def truncate(self, size=None):
+        try:
+            self._afc.file_truncate(self._handle, size)
+        except AFCError:
+            if self.closed:
+                raise IOError("I/O operation on closed file")
+            raise
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        #if exception_type:
+        #    return  # FIXME: do something
+        self.close()
+
+    def __del__(self):
+        self.close()
+
+    # Not sure if this is the most elegant solution
+    # Tested and working though
+    def __iter__(self):
+        r = ""
+        buffer_size = 4096  # What's optimal for this?
+        while True:
+            buff = self.read(buffer_size)
+            if buff:
+                r += buff
+            else:
+                # Reached EOF
+                if r:  # yield the last line if it wasn't already
+                    yield r
+                break
+
+            lines = r.splitlines(True)
+            r = ""
+            for line in lines:
+                if line[-1] == '\n':
+                    yield line
+                else:
+                    r = line  # Continue reading
+
+    xreadlines = __iter__
 
 # AFCShell is doomed because of try-catch approach
 # This makes coding AFCClient easier and AFCShell harder.
