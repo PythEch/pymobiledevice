@@ -69,7 +69,7 @@ class LockdownClient(object):
             self.pair()
             if not self.validate_pairing():
                 raise FatalPairingError
-            self.paired = True
+        self.paired = True
 
     def generate_hostID(self):
         hostname = platform.node()
@@ -157,7 +157,7 @@ class LockdownClient(object):
             raise PairingError(str(Pair))
 
     def getValue(self, domain=None, key=None):
-        request = {'requestuest': 'GetValue', 'Label': self.label}
+        request = {'Request': 'GetValue', 'Label': self.label}
 
         if domain:
             request['Domain'] = domain
