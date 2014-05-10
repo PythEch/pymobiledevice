@@ -17,16 +17,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with pymobiledevice.  If not, see <http://www.gnu.org/licenses/>.
 
-PORTRAIT = 1
-PORTRAIT_UPSIDE_DOWN = 2
-LANDSCAPE = 3  # home button to right
-LANDSCAPE_HOME_TO_LEFT = 4
+# Special Thanks: https://github.com/mountainstorm
 
 
 class Springboard(object):
+    PORTRAIT = 1
+    PORTRAIT_UPSIDE_DOWN = 2
+    LANDSCAPE = 3  # home button to right
+    LANDSCAPE_HOME_TO_LEFT = 4
+
     def __init__(self, lockdown):
         self.lockdown = lockdown
-        self.service = lockdown.startService("com.apple.springboardservices")
+        self.service = self.lockdown.startService("com.apple.springboardservices")
 
     def get_iconstate(self):
         self.service.sendPlist({

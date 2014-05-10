@@ -41,7 +41,7 @@ def convertPKCS1toPKCS8pubKey(data):
     return subjectpublickeyrsa_start + data
 
 
-def ca_do_everything(DevicePublicKey):
+def generateCertificates(DevicePublicKey):
     # Generate random 2048-bit private and public keys
     keyPairGenerator = KeyPairGenerator.getInstance("RSA")
     keyPairGenerator.initialize(2048)
@@ -54,7 +54,7 @@ def ca_do_everything(DevicePublicKey):
     expiryDate = calendar.getTime()
 
     certGen = X509V1CertificateGenerator()
-    dnName = X500Principal("CN=Pymobiledevice Self-Signed CA Certificate")
+    dnName = X500Principal("CN=pyMobileDevice Self-Signed CA Certificate")
 
     certGen.setSerialNumber(BigInteger.ONE)
     certGen.setIssuerDN(dnName)
@@ -68,14 +68,14 @@ def ca_do_everything(DevicePublicKey):
     spec = X509EncodedKeySpec(convertPKCS1toPKCS8pubKey(DevicePublicKey))
     pubKey = KeyFactory.getInstance("RSA").generatePublic(spec)
 
-    certPem = "-----BEGIN CERTIFICATE-----\n" + certGen.generate(keyPair.getPrivate(), "BC").getEncoded().tostring().encode("base64") + "-----END CERTIFICATE-----\n"
+    hostCertificate = "-----BEGIN CERTIFICATE-----\n" + certGen.generate(keyPair.getPrivate(), "BC").getEncoded().tostring().encode("base64") + "-----END CERTIFICATE-----\n"
 
-    privateKeyPem = "-----BEGIN PRIVATE KEY-----\n" + keyPair.getPrivate().getEncoded().tostring().encode("base64") + "-----END PRIVATE KEY-----\n"
+    hostPrivateKey = "-----BEGIN PRIVATE KEY-----\n" + keyPair.getPrivate().getEncoded().tostring().encode("base64") + "-----END PRIVATE KEY-----\n"
 
     certGen.setPublicKey(pubKey)
-    dnName = X500Principal("CN=Pymobiledevice Self-Signed Device Certificate")
+    dnName = X500Principal("CN=pyMobileDevice Self-Signed Device Certificate")
     certGen.setSubjectDN(dnName)
 
-    DeviceCertificate = "-----BEGIN CERTIFICATE-----\n" + certGen.generate(keyPair.getPrivate(), "BC").getEncoded().tostring().encode("base64") + "-----END CERTIFICATE-----\n"
+    deviceCertificate = "-----BEGIN CERTIFICATE-----\n" + certGen.generate(keyPair.getPrivate(), "BC").getEncoded().tostring().encode("base64") + "-----END CERTIFICATE-----\n"
 
-    return certPem, privateKeyPem, DeviceCertificate
+    return hostCertificate, hostPrivateKey, deviceCertificate

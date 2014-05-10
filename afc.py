@@ -158,7 +158,30 @@ class AFCError(IOError):
 
 
 class AFCClient(object):
+    """
+    Creates a connection to the iDevice using AFC protocol.
+
+    Attributes:
+        `lockdown`: The `LockdownClient` class that should be used for almost everything.
+        `serviceName`: The service ID of the protocol.
+        `service`: The plist service which is running in the background.
+        `packet_num`: Used to track number of packets sent during lifetime of the client.
+    """
+
     def __init__(self, lockdown=None, serviceName='com.apple.afc', service=None):
+        """
+        Constructor method of `AFCClient`.
+
+        Note:
+            `serviceName` is obsolete when `service` parameter is used.
+            Although it will be saved as attribute.
+
+        Args:
+            `lockdown` (optional): The `LockdownClient` class that should be used for almost everything.
+            `serviceName` (optional): Service ID of the protocol, defaults to 'com.apple.afc'.
+                Used for abstract class purposes although you can modify if you have good reasons.
+            `service` (optional): Useful when you already have a service running.
+        """
         if lockdown:
             self.lockdown = lockdown
         else:
@@ -172,6 +195,7 @@ class AFCClient(object):
         self.packet_num = 0
 
     def stop_session(self):
+        """Disconnects from iDevice."""
         print "Disconecting..."
         self.service.close()
 
@@ -179,6 +203,15 @@ class AFCClient(object):
         self.stop_session()
 
     def dispatch_packet(self, operation, data, this_length=0):
+        """
+        Dispatches an AFC packet over a client.
+
+        Args:
+            `operation`: The operation to do. See the source code for the list of constants.
+            `data`: The data to send with header.
+            `this_length` (optional): Not sure but, according to C libimobiledevice, it looks
+                like size of packet + data length.
+        """
         afcpack = Container(magic=AFCMAGIC,
                             entire_length=40 + len(data),
                             this_length=40 + len(data),
@@ -191,6 +224,15 @@ class AFCClient(object):
         self.service.send(header + data)
 
     def receive_data(self):
+        """
+        Receives data through an AFC client.
+
+        Returns:
+            The response of the iDevice.
+
+        Raises:
+            `AFCError` if the operation was not successful.
+        """
         res = self.service.recv(40)
         status = AFC_E_SUCCESS
         data = ""
@@ -211,10 +253,23 @@ class AFCClient(object):
         return data
 
     def do_operation(self, operation, data="", this_length=0):
+        """
+        Dispatches a packet and returns the response.
+
+        Args:
+            `operation`: The operation to perform.
+            `data` (optional): The data to send.
+            `this_length` (optional): Not sure but, according to C libimobiledevice, it looks
+                like size of packet + data length.
+
+        Returns:
+            The data that is recieved after the operation is done.
+        """
         self.dispatch_packet(operation, data, this_length)
         return self.receive_data()
 
     def list_to_dict(self, d):
+        """Converts a primitive key, value array to Python compatible dictionary."""
         it = iter(d.rstrip("\x00").split("\x00"))
         return dict(zip(it, it))
 

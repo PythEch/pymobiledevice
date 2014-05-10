@@ -103,7 +103,7 @@ class PlistService(object):
         l = struct.pack(">L", len(payload))
         self.send(l + payload)
 
-    def ssl_start(self, keyfile):
+    def start_ssl(self, keyfile):
         if os._name == 'nt':
             self.s = usbmux.SSLSocket(self.s.sock._sock._get_jsocket(), keyfile)
         else:
