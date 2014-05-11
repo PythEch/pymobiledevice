@@ -26,10 +26,6 @@ from util import readHomeFile, writeHomeFile
 from certificate import generateCertificates
 from plist_service import PlistService
 
-
-#we store pairing records and ssl keys in ~/.pymobiledevice
-HOMEFOLDER = '.pymobiledevice'
-
 class NotTrustedError(Exception):
     pass
 
@@ -48,19 +44,19 @@ class StartServiceError(Exception):
 class FatalPairingError(Exception):
     pass
 
+#Store pairing records and ssl keys in ~/.pymobiledevice
+HOMEFOLDER = '.pymobiledevice'
+
 class LockdownClient(object):
     def __init__(self, udid=None):
         self.service = PlistService(62078, udid)
         self.hostID = self.generate_hostID()
         self.paired = False
         self.label = 'pyMobileDevice'
-        self.service.sendPlist({
-            'Request': 'QueryType'
-            })
-        response = self.service.recvPlist()
+        response = self.service.sendRequest({'Request': 'QueryType'})
         assert response['Type'] == 'com.apple.mobile.lockdown'
 
-        self.allValues = self.getValue('', '')
+        self.allValues = self.getValue()
         self.udid = self.allValues.get('UniqueDeviceID')
         self.osVersion = self.allValues.get('ProductVersion')
         self.devicePublicKey = self.allValues.get('DevicePublicKey').data
@@ -77,19 +73,15 @@ class LockdownClient(object):
         return str(hostid).upper()
 
     def enter_recovery(self):
-        self.service.sendPlist({
-            'Request': 'EnterRecovery'
-            })
-        return self.service.recvPlist()
+        return self.service.sendRequest({'Request': 'EnterRecovery'})
 
     def stop_session(self):
         if self.SessionID and self.service:
-            self.service.sendPlist({
+            self.SessionID = None
+            response = self.service.sendRequest({
                 'Request': 'StopSession',
                 'SessionID': self.SessionID
                 })
-            self.SessionID = None
-            response = self.service.recvPlist()
             if not response or response.get('Result') != 'Success':
                 raise CannotStopSessionError
             return response
@@ -105,27 +97,24 @@ class LockdownClient(object):
             print "No pairing record found for device %s" % self.udid
             return False
 
-        self.service.sendPlist({
+        ValidatePair = self.service.sendRequest({
             'Request': 'ValidatePair',
             'PairRecord': pair_record
             })
-        ValidatePair = self.service.recvPlist()
-
         if not ValidatePair or 'Error' in ValidatePair:
             pair_record = None
             return False
 
-        self.service.sendPlist({
+        StartSession = self.service.sendRequest({
             'Request': 'StartSession',
             'HostID': pair_record.get('HostID', self.hostID)
             })
-        StartSession = self.service.recvPlist()
         self.SessionID = StartSession.get('SessionID')
 
         if StartSession.get('EnableSessionSSL'):
             keyfile = writeHomeFile(HOMEFOLDER, self.udid + "_ssl.txt", hostCertificate + '\n' + hostPrivateKey)
             self.service.start_ssl(keyfile)
-            self.allValues = self.getValue('', '')
+            self.allValues = self.getValue()  # iDevice gives more information after being trusted
         return True
 
     def pair(self):
@@ -140,11 +129,10 @@ class LockdownClient(object):
                        'RootCertificate': plistlib.Data(hostCertificate),
                        'SystemBUID': '30142955-444094379208051516'}
 
-        self.service.sendPlist({
+        Pair = self.service.sendRequest({
             'Request': 'Pair',
             'PairRecord': pair_record
             })
-        Pair = self.service.recvPlist()
 
         if self.osVersion[0] == '7' and Pair.get('Error') == 'PasswordProtected':
             raise NotTrustedError
@@ -154,7 +142,7 @@ class LockdownClient(object):
                 pair_record['EscrowBag'] = Pair['EscrowBag']
             writeHomeFile(HOMEFOLDER, '%s.plist' % self.udid, plistlib.writePlistToString(pair_record))
         else:
-            raise PairingError(str(Pair))
+            raise PairingError
 
     def getValue(self, domain=None, key=None):
         request = {'Request': 'GetValue', 'Label': self.label}
@@ -163,8 +151,7 @@ class LockdownClient(object):
             request['Domain'] = domain
         if key:
             request['Key'] = key
-        self.service.sendPlist(request)
-        response = self.service.recvPlist()
+        response = self.service.sendRequest(request)
         if response:
             r = response.get('Value')
             if hasattr(r, 'data'):
@@ -175,15 +162,12 @@ class LockdownClient(object):
         if not self.paired:
             raise NotPairedError
 
-        self.service.sendPlist({
+        StartService = self.service.sendRequest({
             'Request': 'StartService',
             'Service': name
             })
-        StartService = self.service.recvPlist()
 
-        if not StartService:
-            return
-        if 'Error' in StartService:
+        if not StartService or 'Error' in StartService:
             raise StartServiceError(StartService['Error'])
         return PlistService(StartService['Port'])
 

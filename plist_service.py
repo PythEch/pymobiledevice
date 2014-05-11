@@ -46,22 +46,20 @@ class PlistService(object):
                 dev = mux.devices[0]
                 print "Connecting to device: " + dev.serial
 
-        #
-        #self.udid = dev.serial ###
         try:
-            self.s = mux.connect(dev, self.port)
+            self.socket = mux.connect(dev, self.port)
         except:
             raise Exception("Connection to device port %d failed" % self.port)
         return dev.serial
 
     def close(self):
-        self.s.close()
+        self.socket.close()
 
     def recv(self, len=4096):
-        return self.s.recv(len)
+        return self.socket.recv(len)
 
     def send(self, data):
-        return self.s.send(data)
+        return self.socket.send(data)
 
     def recv_exact(self, l):
         data = ""
@@ -103,8 +101,12 @@ class PlistService(object):
         l = struct.pack(">L", len(payload))
         self.send(l + payload)
 
+    def sendRequest(self, plist):
+        self.sendPlist(plist)
+        return self.recvPlist()
+
     def start_ssl(self, keyfile):
         if os._name == 'nt':
-            self.s = usbmux.SSLSocket(self.s.sock._sock._get_jsocket(), keyfile)
+            self.socket = usbmux.SSLSocket(self.socket.sock._sock._get_jsocket(), keyfile)
         else:
-            self.s = usbmux.SSLSocket(self.s.sock, keyfile)
+            self.socket = usbmux.SSLSocket(self.socket.sock, keyfile)

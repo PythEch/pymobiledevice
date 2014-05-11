@@ -19,23 +19,27 @@
 
 # Special Thanks: https://github.com/mountainstorm
 
+from lockdown import LockdownClient
 
-class Springboard(object):
-    PORTRAIT = 1
-    PORTRAIT_UPSIDE_DOWN = 2
-    LANDSCAPE = 3  # home button to right
-    LANDSCAPE_HOME_TO_LEFT = 4
+PORTRAIT = 1
+PORTRAIT_UPSIDE_DOWN = 2
+LANDSCAPE = 3  # home button to right
+LANDSCAPE_HOME_TO_LEFT = 4
 
-    def __init__(self, lockdown):
-        self.lockdown = lockdown
+
+class SpringboardClient(object):
+    def __init__(self, lockdown=None):
+        if lockdown:
+            self.lockdown = lockdown
+        else:
+            self.lockdown = LockdownClient()
         self.service = self.lockdown.startService("com.apple.springboardservices")
 
     def get_iconstate(self):
-        self.service.sendPlist({
+        return self.service.sendRequest({
             'command': 'getIconState',
             'formatVersion': '2'
-            })
-        return self.service.recvPlist()
+            })[0]
 
     def set_iconstate(self, state):
         self.service.sendPlist({
@@ -44,23 +48,16 @@ class Springboard(object):
             })
 
     def get_iconpngdata(self, bundleid):
-        self.service.sendPlist({
+        return self.service.sendRequest({
             'command': 'getIconPNGData',
             'bundleId': bundleid
-        })
-        return self.service.recvPlist()['pngData']
+        })['pngData'].data
 
     def get_interface_orientation(self):
-        self.service.sendPlist({
-            'command': 'getInterfaceOrientation'
-            })
-        reply = self.service.recvPlist()
-        if reply is None or 'interfaceOrientation' not in reply:
+        response = self.service.sendRequest({'command': 'getInterfaceOrientation'})
+        if response is None or 'interfaceOrientation' not in response:
             raise RuntimeError('Unable to retrieve interface orientation')
-        return reply['interfaceOrientation']
+        return response['interfaceOrientation']
 
     def get_wallpaper_pngdata(self):
-        self.service.sendPlist({
-            'command': 'getHomeScreenWallpaperPNGData'
-            })
-        return self.service.recvPlist()['pngData']
+        return self.service.sendRequest({'command': 'getHomeScreenWallpaperPNGData'})['pngData'].data

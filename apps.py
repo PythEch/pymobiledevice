@@ -26,10 +26,10 @@ from lockdown import LockdownClient
 
 class InstallationProxy(object):
     def __init__(self, lockdown=None):
-        if lockdown is None:
-            self.lockdown = LockdownClient()
-        else:
+        if lockdown:
             self.lockdown = lockdown
+        else:
+            self.lockdown = LockdownClient()
 
         self.service = self.lockdown.startService('com.apple.mobile.installation_proxy')
 
@@ -58,17 +58,13 @@ class InstallationProxy(object):
                 break
 
     def app_info(self):
-        self.service.sendPlist({
-            'Command': 'Lookup'
-            })
-        return self.service.recvPlist()['LookupResult'].values()
+        return self.service.sendRequest({'Command': 'Lookup'})['LookupResult'].values()
 
-    def list_apps(self):
-        for app in self.app_info():
-            if app.get('ApplicationType') != 'System':
-                print app['CFBundleIdentifier'], '=>', app.get('Container')
-            else:
-                print app['CFBundleIdentifier'], '=>', app.get('CFBundleDisplayName')
+    def list_user_apps(self):
+        return [[app['CFBundleIdentifier'], app.get('CFBundleDisplayName'), app.get('Container')] for app in self.app_info() if app.get('ApplicationType') == 'User']
+
+    def list_system_apps(self):
+        return [[app['CFBundleIdentifier'], app.get('CFBundleDisplayName')] for app in self.app_info() if app.get('ApplicationType') == 'System']
 
     def get_apps_BundleID(self, appType='User'):
         appList = []
@@ -90,12 +86,11 @@ class AFCApplication(AFCClient):
     def __init__(self, lockdown, applicationBundleID):
         super(AFCApplication, self).__init__(lockdown, 'com.apple.mobile.house_arrest')
 
-        self.service.sendPlist({
+        response = self.service.sendRequest({
             'Command': 'VendDocuments',
             'Identifier': applicationBundleID
             })
 
-        response = self.service.recvPlist()
         error = response.get('Error')
         if error:
             print error  # FIXME
