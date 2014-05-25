@@ -58,22 +58,30 @@ class InstallationProxy(object):
                 break
 
     def app_info(self):
-        return self.service.sendRequest({'Command': 'Lookup'})['LookupResult'].values()
+        return self.service.sendRequest({'Command': 'Lookup'})['LookupResult']
 
     def list_user_apps(self):
-        return [[app['CFBundleIdentifier'], app.get('CFBundleDisplayName'), app.get('Container')] for app in self.app_info() if app.get('ApplicationType') == 'User']
+        return [[app['CFBundleIdentifier'], app.get('CFBundleDisplayName'), app.get('Container')]
+                for app in self.app_info().values()
+                if app.get('ApplicationType') == 'User']
 
     def list_system_apps(self):
-        return [[app['CFBundleIdentifier'], app.get('CFBundleDisplayName')] for app in self.app_info() if app.get('ApplicationType') == 'System']
+        return [[app['CFBundleIdentifier'], app.get('CFBundleDisplayName')]
+                for app in self.app_info().values()
+                if app.get('ApplicationType') == 'System']
 
-    def get_apps_BundleID(self, appType='User'):
-        appList = []
-        for app in self.app_info():
-            if app.get('ApplicationType') == appType:
-                appList.append(app['CFBundleIdentifier'])
-            #else: #FIXME
-            #    appList.append(app['CFBundleIdentifier'])
-        return appList
+    def list_user_apps_BundleID(self):
+        return [app['CFBundleIdentifier']
+                for app in self.app_info().values()
+                if app.get('ApplicationType') == 'User']
+
+    def list_system_apps_BundleID(self):
+        return [app['CFBundleIdentifier']
+                for app in self.app_info().values()
+                if app.get('ApplicationType') == 'System']
+
+    def list_all_apps_BundleID(self):
+        return self.app_info().keys()
 
     def close(self):
         self.service.close()
