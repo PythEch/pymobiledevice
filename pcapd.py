@@ -26,7 +26,7 @@ LINKTYPE_ETHERNET = 1
 LINKTYPE_RAW      = 101
 
 
-class PcapOut(object):
+class PcapClient(object):
     def __init__(self, filename, lockdown=None):
         if lockdown:
             self.lockdown = lockdown
