@@ -38,10 +38,10 @@ class PcapClient(object):
         self.f = open(filename, "wb")
         self.f.write(struct.pack("<LHHLLLL", 0xa1b2c3d4, 2, 4, 0, 0, 65535, LINKTYPE_ETHERNET))
 
-        self.stop = False # use this to stop capturePackets() remotely
+        self._stop = False
 
     def __del__(self):
-        self.f.close()
+        self.stop()
 
     def writePacket(self, packet):
         t = time.time()
@@ -53,7 +53,7 @@ class PcapClient(object):
         return True
 
     def capturePackets(self):
-        while not self.stop:
+        while not self._stop:
             d = self.service.recvPlist()
             if not d:
                 break
@@ -72,6 +72,10 @@ class PcapClient(object):
             if not self.writePacket(packet):
                 break
 
+    def stop(self):
+        self._stop = True
+        self.f.close()
+
 if __name__ == "__main__":
-    PcapOut("test.pcap").capturePackets()
+    PcapClient("test.pcap").capturePackets()
 
