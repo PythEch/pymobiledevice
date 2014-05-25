@@ -25,6 +25,7 @@ from pymobiledevice.lockdown import LockdownClient
 LINKTYPE_ETHERNET = 1
 LINKTYPE_RAW      = 101
 
+
 class PcapOut(object):
     def __init__(self, filename, lockdown=None):
         if lockdown:
@@ -53,23 +54,23 @@ class PcapOut(object):
 
     def capturePackets(self):
         while not self.stop:
-                d = self.service.recvPlist()
-                if not d:
-                    break
-                data = d.data
-                hdrsize, xxx, packet_size = struct.unpack(">LBL", data[:9])
-                flags1, flags2, offset_to_ip_data, zero = struct.unpack(">LLLL", data[9:0x19])
-                assert hdrsize >= 0x19
-                interfacetype = data[0x19:hdrsize].strip("\x00")
-                t = time.time()
-                print interfacetype, packet_size, t
-                packet = data[hdrsize:]
-                assert packet_size == len(packet)
-                if offset_to_ip_data == 0:
-                    #add fake ethernet header for pdp packets
-                    packet = "\xBE\xEF" * 6 + "\x08\x00" + packet
-                if not self.writePacket(packet):
-                    break
+            d = self.service.recvPlist()
+            if not d:
+                break
+            data = d.data
+            hdrsize, xxx, packet_size = struct.unpack(">LBL", data[:9])
+            flags1, flags2, offset_to_ip_data, zero = struct.unpack(">LLLL", data[9:0x19])
+            assert hdrsize >= 0x19
+            interfacetype = data[0x19:hdrsize].strip("\x00")
+            t = time.time()
+            print interfacetype, packet_size, t
+            packet = data[hdrsize:]
+            assert packet_size == len(packet)
+            if offset_to_ip_data == 0:
+                #add fake ethernet header for pdp packets
+                packet = "\xBE\xEF" * 6 + "\x08\x00" + packet
+            if not self.writePacket(packet):
+                break
 
 if __name__ == "__main__":
     PcapOut("test.pcap").capturePackets()
