@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env jython
 # -*- coding: utf-8 -*-
 #
 #       usbmux.py - usbmux client library for Jython
