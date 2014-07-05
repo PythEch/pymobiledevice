@@ -21,6 +21,7 @@
 import platform
 import plistlib
 import uuid
+from usbmux import usbmux
 from util import readHomeFile, writeHomeFile
 
 from certificate import generateCertificates
@@ -46,6 +47,11 @@ class FatalPairingError(Exception):
 
 #Store pairing records and ssl keys in ~/.pymobiledevice
 HOMEFOLDER = '.pymobiledevice'
+
+def list_devices():
+    mux = usbmux.USBMux()
+    mux.process(1)
+    return [d.serial for d in mux.devices]
 
 class LockdownClient(object):
     def __init__(self, udid=None):

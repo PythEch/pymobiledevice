@@ -23,13 +23,14 @@ def makedirs(dirs):
         pass
 
 def getHomePath(foldername, filename):
-    folderpath = os.path.expanduser(os.path.join('~', foldername))
+    folderpath = os.path.join('~', foldername)
     if not os.path.exists(folderpath):
         makedirs(folderpath)
     return os.path.join(folderpath, filename)
 
 def readHomeFile(foldername, filename):
     path = getHomePath(foldername, filename)
+    print "path: %s" % path
     if not os.path.exists(path):
         return None
     return read_file(path)
